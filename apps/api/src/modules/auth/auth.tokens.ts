@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import jwt, { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 import { UserRole } from "../../../generated/prisma/client.js";
 import { AppError } from "../../utils/app-error.js";
@@ -108,11 +108,11 @@ function verifyToken(
     const decoded = jwt.verify(token, secret);
     return parseVerifiedPayload(decoded, expectedType);
   } catch (error) {
-    if (error instanceof TokenExpiredError) {
+    if (error instanceof jwt.TokenExpiredError) {
       throw expiredTokenError(expectedType);
-    }
+    }   
 
-    if (error instanceof JsonWebTokenError) {
+    if (error instanceof jwt.JsonWebTokenError) {
       throw invalidTokenError(expectedType);
     }
 
