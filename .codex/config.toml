@@ -1,0 +1,15 @@
+[mcp_servers.openai_docs]
+url = "https://developers.openai.com/mcp"
+
+[execution]
+require_confirmation = true
+show_diff_before_apply = true
+
+[behavior]
+mode = "proposal-first"
+explain_before_code = true
+
+[guardrails]
+strict_scope = true
+no_unscoped_changes = true
+no_auto_refactor = true
