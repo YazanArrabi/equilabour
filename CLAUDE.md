@@ -43,26 +43,28 @@ pnpm --filter api prisma:validate     # Validate schema
 
 **Prisma client** is generated to `apps/api/generated/prisma/client` (non-default path — always import from there, not `@prisma/client`).
 
-**File storage:** AWS S3 with presigned URLs. Private storage only — do not expose S3 internals to clients.
+**File storage:** AWS S3 with presigned URLs. Private storage only — do not expose S3 internals to clients. Respect ownership and immutability rules. Do not add upload logic unless the task explicitly requires it.
 
-**AI integration:** Anthropic Claude SDK. AI runs synchronously after profile updates; output stored in `AIAnalysisResult` and is read-only for users. AI is **not** in the normal search path.
+**AI integration:** Anthropic Claude SDK. AI runs synchronously after profile updates; output stored in `AIAnalysisResult` and is read-only for users. AI is **not** in the normal search path. If AI is not part of the current task, leave a clear stub/comment only — do not invent fake AI behavior.
 
 ## Key Constraints
 
 **Permissions:**
 - Users edit only their own data
 - All authenticated users can view other profiles (read-only)
+- Workers cannot edit company data; companies cannot edit worker data
 - Only companies manage jobs; only workers apply to jobs
 - Only the owning company manages applications
+- Do not expose sensitive fields in responses
 
-**Schema constraints (do not alter without justification):**
+**Schema constraints** — do not alter without justification. If a schema change is truly required: justify it explicitly, explain migration impact, and do not mix schema changes with unrelated business logic.
 - `role`: `worker | company`
 - Application status: `pending | accepted | rejected` (no "reviewed")
 - One application per worker per job
 - Job soft-delete via `status` field
 - `AIAnalysisResult` is stored and read-only
 
-**Validation:** Use Zod; reject unknown fields by default.
+**Validation:** Use Zod; reject unknown fields by default. Do not silently accept invalid input.
 
 ## Required Workflow
 
@@ -71,7 +73,7 @@ Before making any changes:
 2. Show the full code.
 3. Wait for approval before applying, unless explicitly told to apply immediately.
 
-When applying: only apply the approved scope — no unrelated edits, no "improvements" outside scope.
+When applying: only apply the approved scope — no unrelated edits, no "improvements" outside scope. Preserve existing naming and structure. Do not rewrite working files unless required.
 
 ## Implementation Priorities (in order)
 
@@ -82,6 +84,17 @@ When applying: only apply the approved scope — no unrelated edits, no "improve
 5. AI integration
 6. Frontend
 
+## Review Checklist
+
+When reviewing or changing code, explicitly check:
+- Authorization and ownership enforcement
+- Validation completeness
+- Schema alignment
+- Response format consistency (`{ success, data/error }`)
+- State transition correctness
+- No sensitive data exposure
+- No architecture drift
+
 ## Testing Approach
 
-Prefer minimal reproducible manual test steps with curl examples. Do not claim something works unless it was actually verified.
+Prefer minimal reproducible manual test steps with curl examples. Do not claim something works unless it was actually verified or the limitation is stated clearly.
