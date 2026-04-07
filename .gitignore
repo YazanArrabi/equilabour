@@ -6,3 +6,5 @@ coverage
 .DS_Store
 pnpm-debug.log*.claude/
 .remember/
+.claude/
+.remember/
