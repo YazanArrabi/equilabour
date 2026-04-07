@@ -8,3 +8,5 @@ pnpm-debug.log*.claude/
 .remember/
 .claude/
 .remember/
+cookies.txt
+cookies_company.txt
