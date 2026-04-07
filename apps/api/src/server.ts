@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import jobRoutes from "./modules/jobs/job.routes.js";
 import profileRoutes from "./modules/profile/profile.routes.js";
 
 const app = express();
@@ -17,6 +18,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/profiles", profileRoutes);
+app.use("/jobs", jobRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

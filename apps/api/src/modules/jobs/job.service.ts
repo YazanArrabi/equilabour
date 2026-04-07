@@ -1,0 +1,285 @@
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../utils/app-error.js";
+import type {
+  CreateJobInput,
+  JobQueryInput,
+  MyJobsQueryInput,
+  UpdateJobInput,
+} from "./job.schemas.js";
+
+const jobSelect = {
+  id: true,
+  companyProfileId: true,
+  title: true,
+  description: true,
+  requiredSkills: true,
+  experienceLevel: true,
+  employmentType: true,
+  salary: true,
+  location: true,
+  status: true,
+  postedAt: true,
+  updatedAt: true,
+} as const;
+
+export type Job = {
+  id: string;
+  companyProfileId: string;
+  title: string;
+  description: string;
+  requiredSkills: string[];
+  experienceLevel: string;
+  employmentType: string;
+  salary: string | null;
+  location: string | null;
+  status: string;
+  postedAt: Date;
+  updatedAt: Date;
+};
+
+export type PaginatedResult<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export async function createJob(
+  userId: string,
+  input: CreateJobInput,
+): Promise<Job> {
+  const companyProfile = await prisma.companyProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!companyProfile) {
+    throw new AppError(404, "PROFILE_NOT_FOUND", "Company profile not found.");
+  }
+
+  return prisma.jobPosting.create({
+    data: {
+      companyProfileId: companyProfile.id,
+      title: input.title,
+      description: input.description,
+      requiredSkills: input.requiredSkills,
+      experienceLevel: input.experienceLevel,
+      employmentType: input.employmentType,
+      salary: input.salary ?? null,
+      location: input.location ?? null,
+    },
+    select: jobSelect,
+  });
+}
+
+export async function listActiveJobs(
+  query: JobQueryInput,
+): Promise<PaginatedResult<Job>> {
+  const { page, limit, location, employmentType, experienceLevel } = query;
+  const skip = (page - 1) * limit;
+
+  const where = {
+    status: "active" as const,
+    ...(location !== undefined && {
+      location: { contains: location, mode: "insensitive" as const },
+    }),
+    ...(employmentType !== undefined && { employmentType }),
+    ...(experienceLevel !== undefined && { experienceLevel }),
+  };
+
+  const [total, items] = await prisma.$transaction([
+    prisma.jobPosting.count({ where }),
+    prisma.jobPosting.findMany({
+      where,
+      select: jobSelect,
+      skip,
+      take: limit,
+      orderBy: { postedAt: "desc" },
+    }),
+  ]);
+
+  return {
+    items,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+export async function listMyJobs(
+  userId: string,
+  query: MyJobsQueryInput,
+): Promise<PaginatedResult<Job>> {
+  const { page, limit, status } = query;
+  const skip = (page - 1) * limit;
+
+  const companyProfile = await prisma.companyProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!companyProfile) {
+    throw new AppError(404, "PROFILE_NOT_FOUND", "Company profile not found.");
+  }
+
+  const where = {
+    companyProfileId: companyProfile.id,
+    ...(status !== undefined && { status }),
+  };
+
+  const [total, items] = await prisma.$transaction([
+    prisma.jobPosting.count({ where }),
+    prisma.jobPosting.findMany({
+      where,
+      select: jobSelect,
+      skip,
+      take: limit,
+      orderBy: { postedAt: "desc" },
+    }),
+  ]);
+
+  return {
+    items,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+export async function getJobById(
+  jobId: string,
+  requestingUserId: string,
+): Promise<Job> {
+  const job = await prisma.jobPosting.findFirst({
+    where: {
+      id: jobId,
+      status: { not: "deleted" },
+      OR: [
+        { status: "active" },
+        { companyProfile: { userId: requestingUserId } },
+      ],
+    },
+    select: jobSelect,
+  });
+
+  if (!job) {
+    throw new AppError(404, "JOB_NOT_FOUND", "Job not found.");
+  }
+
+  return job;
+}
+
+export async function updateJob(
+  userId: string,
+  jobId: string,
+  input: UpdateJobInput,
+): Promise<Job> {
+  const job = await prisma.jobPosting.findUnique({
+    where: { id: jobId },
+    include: { companyProfile: { select: { userId: true } } },
+  });
+
+  if (!job) {
+    throw new AppError(404, "JOB_NOT_FOUND", "Job not found.");
+  }
+
+  if (job.companyProfile.userId !== userId) {
+    throw new AppError(
+      403,
+      "FORBIDDEN",
+      "You are not allowed to access this resource.",
+    );
+  }
+
+  if (job.status === "deleted") {
+    throw new AppError(409, "JOB_DELETED", "Cannot edit a deleted job.");
+  }
+
+  return prisma.jobPosting.update({
+    where: { id: jobId },
+    data: input,
+    select: jobSelect,
+  });
+}
+
+export async function updateJobStatus(
+  userId: string,
+  jobId: string,
+  newStatus: "active" | "closed",
+): Promise<Job> {
+  const job = await prisma.jobPosting.findUnique({
+    where: { id: jobId },
+    include: { companyProfile: { select: { userId: true } } },
+  });
+
+  if (!job) {
+    throw new AppError(404, "JOB_NOT_FOUND", "Job not found.");
+  }
+
+  if (job.companyProfile.userId !== userId) {
+    throw new AppError(
+      403,
+      "FORBIDDEN",
+      "You are not allowed to access this resource.",
+    );
+  }
+
+  if (job.status === "deleted") {
+    throw new AppError(
+      409,
+      "INVALID_STATE_TRANSITION",
+      "Cannot change the status of a deleted job.",
+    );
+  }
+
+  if (job.status === newStatus) {
+    return prisma.jobPosting.findUniqueOrThrow({
+      where: { id: jobId },
+      select: jobSelect,
+    });
+  }
+
+  return prisma.jobPosting.update({
+    where: { id: jobId },
+    data: { status: newStatus },
+    select: jobSelect,
+  });
+}
+
+export async function softDeleteJob(
+  userId: string,
+  jobId: string,
+): Promise<Job> {
+  const job = await prisma.jobPosting.findUnique({
+    where: { id: jobId },
+    include: { companyProfile: { select: { userId: true } } },
+  });
+
+  if (!job) {
+    throw new AppError(404, "JOB_NOT_FOUND", "Job not found.");
+  }
+
+  if (job.companyProfile.userId !== userId) {
+    throw new AppError(
+      403,
+      "FORBIDDEN",
+      "You are not allowed to access this resource.",
+    );
+  }
+
+  if (job.status === "deleted") {
+    return prisma.jobPosting.findUniqueOrThrow({
+      where: { id: jobId },
+      select: jobSelect,
+    });
+  }
+
+  return prisma.jobPosting.update({
+    where: { id: jobId },
+    data: { status: "deleted" },
+    select: jobSelect,
+  });
+}
