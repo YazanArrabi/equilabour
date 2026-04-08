@@ -6,6 +6,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import jobRoutes from "./modules/jobs/job.routes.js";
 import profileRoutes from "./modules/profile/profile.routes.js";
 import applicationRouter, { jobApplicationRouter } from "./modules/applications/application.routes.js";
+import fileRoutes from "./modules/files/file.routes.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -22,6 +23,7 @@ app.use("/profiles", profileRoutes);
 app.use("/jobs", jobRoutes);
 app.use("/jobs/:jobId/applications", jobApplicationRouter);
 app.use("/applications", applicationRouter);
+app.use("/files", fileRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
