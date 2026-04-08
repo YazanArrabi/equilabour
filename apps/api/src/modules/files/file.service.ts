@@ -13,6 +13,7 @@ import {
 } from "../../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
 import { s3Client, S3_BUCKET_NAME } from "../../lib/s3.js";
+import { analyzeWorkerProfile } from "../ai/ai.service.js";
 import { AppError } from "../../utils/app-error.js";
 import type {
   ConfirmUploadInput,
@@ -161,8 +162,9 @@ export async function confirmUpload(
     profileId = companyProfile.id;
   }
 
+  let createdFile: FileAsset;
   try {
-    return await prisma.$transaction(async (tx) => {
+    createdFile = await prisma.$transaction(async (tx) => {
       const file = await tx.fileAsset.create({
         data: {
           ownerType:
@@ -208,6 +210,13 @@ export async function confirmUpload(
     }
     throw error;
   }
+
+  // Trigger AI analysis for worker file uploads (outside transaction, after DB write succeeds)
+  if (userRole === "worker") {
+    await analyzeWorkerProfile(profileId);
+  }
+
+  return createdFile;
 }
 
 export async function getMyFiles(

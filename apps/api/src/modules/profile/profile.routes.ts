@@ -22,6 +22,17 @@ router.patch(
   workerProfileController.updateMyWorkerProfile,
 );
 router.get(
+  "/workers/me/ai-analysis",
+  requireAuth,
+  requireRole(UserRole.worker),
+  workerProfileController.getMyAiAnalysis,
+);
+router.get(
+  "/workers/:workerId/ai-analysis",
+  requireAuth,
+  workerProfileController.getWorkerProfileAiAnalysis,
+);
+router.get(
   "/workers/:workerId",
   requireAuth,
   workerProfileController.getWorkerProfileById,

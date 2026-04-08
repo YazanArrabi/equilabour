@@ -39,3 +39,29 @@ export async function updateMyWorkerProfile(req: Request, res: Response) {
 
   return sendSuccess(res, profile);
 }
+
+export async function getMyAiAnalysis(req: Request, res: Response) {
+  if (!req.auth) {
+    throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
+  }
+
+  const profile = await workerProfileService.getWorkerProfileByUserId(
+    req.auth.userId,
+  );
+  const analysis = await workerProfileService.getWorkerAiAnalysis(profile.id);
+
+  return sendSuccess(res, { analysis });
+}
+
+export async function getWorkerProfileAiAnalysis(req: Request, res: Response) {
+  if (!req.auth) {
+    throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
+  }
+
+  const profile = await workerProfileService.getWorkerProfileById(
+    req.params.workerId,
+  );
+  const analysis = await workerProfileService.getWorkerAiAnalysis(profile.id);
+
+  return sendSuccess(res, { analysis });
+}
