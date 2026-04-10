@@ -1,3 +1,295 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { createJob, type EmploymentType, type ExperienceLevel } from "@/api/jobs";
+import { ApiError } from "@/api/client";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  full_time: "Full Time",
+  part_time: "Part Time",
+  contract: "Contract",
+  internship: "Internship",
+  freelance: "Freelance",
+};
+
+const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
+  entry: "Entry Level",
+  junior: "Junior",
+  mid: "Mid-Level",
+  senior: "Senior",
+};
+
+function TagInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string[];
+  onChange: (tags: string[]) => void;
+  placeholder?: string;
+}) {
+  const [inputValue, setInputValue] = useState("");
+
+  function addTag(raw: string) {
+    const tag = raw.trim();
+    if (tag && !value.includes(tag)) onChange([...value, tag]);
+    setInputValue("");
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(inputValue);
+    } else if (e.key === "Backspace" && inputValue === "" && value.length > 0) {
+      onChange(value.slice(0, -1));
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Input
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={() => { if (inputValue.trim()) addTag(inputValue); }}
+        placeholder={placeholder}
+      />
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {value.map((tag) => (
+            <Badge key={tag} variant="secondary" className="gap-1 cursor-default">
+              {tag}
+              <button
+                type="button"
+                className="ml-1 hover:text-destructive leading-none"
+                onClick={() => onChange(value.filter((t) => t !== tag))}
+              >
+                ×
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const schema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(20, "Description must be at least 20 characters"),
+  requiredSkills: z.array(z.string()),
+  experienceLevel: z.enum(["entry", "junior", "mid", "senior"]),
+  employmentType: z.enum(["full_time", "part_time", "contract", "internship", "freelance"]),
+  location: z.string().optional(),
+  salary: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof schema>;
+
 export default function CreateJobPage() {
-  return <div>Create Job Page</div>;
+  const navigate = useNavigate();
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: "",
+      description: "",
+      requiredSkills: [],
+      experienceLevel: "mid",
+      employmentType: "full_time",
+      location: "",
+      salary: "",
+    },
+  });
+
+  async function onSubmit(values: FormValues) {
+    setApiError(null);
+    try {
+      const job = await createJob({
+        title: values.title,
+        description: values.description,
+        requiredSkills: values.requiredSkills,
+        experienceLevel: values.experienceLevel,
+        employmentType: values.employmentType,
+        location: values.location?.trim() || undefined,
+        salary: values.salary?.trim() || undefined,
+      });
+      navigate(`/jobs/${job.id}`);
+    } catch (err) {
+      setApiError(err instanceof ApiError ? err.message : "An unexpected error occurred.");
+    }
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Post a Job</h1>
+        <p className="text-muted-foreground">Fill in the details below</p>
+      </div>
+
+      {apiError && (
+        <Alert variant="destructive">
+          <AlertDescription>{apiError}</AlertDescription>
+        </Alert>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle>Job Details</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl><Textarea rows={6} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="experienceLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Experience level</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(Object.entries(EXPERIENCE_LEVEL_LABELS) as [ExperienceLevel, string][]).map(([val, label]) => (
+                          <SelectItem key={val} value={val}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="employmentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Employment type</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(Object.entries(EMPLOYMENT_TYPE_LABELS) as [EmploymentType, string][]).map(([val, label]) => (
+                          <SelectItem key={val} value={val}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl><Input placeholder="City, Country or Remote" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="salary"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Salary</FormLabel>
+                    <FormControl><Input placeholder="e.g. $80,000–$100,000 / year" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="requiredSkills"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Required skills</FormLabel>
+                    <FormControl>
+                      <TagInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Type a skill and press Enter or comma"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/jobs/mine")}
+              disabled={form.formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Posting…" : "Post job"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  );
 }
