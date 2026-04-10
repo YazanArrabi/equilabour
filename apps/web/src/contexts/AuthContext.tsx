@@ -7,10 +7,12 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import * as authApi from "@/api/auth";
+import { FORCE_LOGOUT_EVENT } from "@/api/client";
 
 export interface AuthUser {
   userId: string;
   role: "worker" | "company";
+  profileId: string | null;
 }
 
 interface AuthContextValue {
@@ -30,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const data = await authApi.getMe();
-      setUser({ userId: data.id, role: data.role });
+      setUser({ userId: data.id, role: data.role, profileId: data.profileId });
     } catch {
       setUser(null);
     }
@@ -39,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh().finally(() => setIsLoading(false));
   }, [refresh]);
+
+  // Listen for force-logout events (fired by apiFetch when silent refresh fails)
+  useEffect(() => {
+    function handleForceLogout() {
+      setUser(null);
+    }
+    window.addEventListener(FORCE_LOGOUT_EVENT, handleForceLogout);
+    return () => window.removeEventListener(FORCE_LOGOUT_EVENT, handleForceLogout);
+  }, []);
 
   const login = useCallback(
     async (input: authApi.LoginInput) => {

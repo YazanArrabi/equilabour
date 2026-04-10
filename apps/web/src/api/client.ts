@@ -21,9 +21,32 @@ export class ApiError extends Error {
   }
 }
 
+// Emitted when a silent refresh fails — AuthContext listens and clears user state.
+export const FORCE_LOGOUT_EVENT = "equilabour:force-logout";
+
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = fetch(`${API_BASE}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  })
+    .then((r) => r.ok)
+    .catch(() => false)
+    .finally(() => {
+      isRefreshing = false;
+      refreshPromise = null;
+    });
+  return refreshPromise;
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
+  _retry = true,
 ): Promise<T> {
   const headers: Record<string, string> = {
     ...(init?.headers as Record<string, string>),
@@ -46,6 +69,16 @@ export async function apiFetch<T>(
   };
 
   if (!response.ok) {
+    // On 401 (expired access token), attempt one silent refresh then retry.
+    if (response.status === 401 && _retry) {
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        return apiFetch<T>(path, init, false);
+      }
+      // Refresh also failed — force logout.
+      window.dispatchEvent(new Event(FORCE_LOGOUT_EVENT));
+    }
+
     throw new ApiError(
       response.status,
       json.error?.code ?? "UNKNOWN_ERROR",

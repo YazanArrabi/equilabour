@@ -69,7 +69,7 @@ function TagInput({
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === ",") {
+    if (e.key === "Enter") {
       e.preventDefault();
       addTag(inputValue);
     } else if (e.key === "Backspace" && inputValue === "" && value.length > 0) {
@@ -316,7 +316,7 @@ export default function WorkerProfilePage() {
                         <TagInput
                           value={field.value}
                           onChange={field.onChange}
-                          placeholder="Type a skill and press Enter or comma"
+                          placeholder="Type a skill and press Enter"
                         />
                       </FormControl>
                       <FormMessage />
@@ -354,7 +354,7 @@ export default function WorkerProfilePage() {
                         <TagInput
                           value={field.value}
                           onChange={field.onChange}
-                          placeholder="Type a title and press Enter or comma"
+                          placeholder="Type a title and press Enter"
                         />
                       </FormControl>
                       <FormMessage />

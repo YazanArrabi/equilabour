@@ -16,6 +16,11 @@ const applicationSelect = {
   updatedAt: true,
 } as const;
 
+const applicationWithJobSelect = {
+  ...applicationSelect,
+  jobPosting: { select: { title: true } },
+} as const;
+
 export type Application = {
   id: string;
   jobPostingId: string;
@@ -25,6 +30,8 @@ export type Application = {
   appliedAt: Date;
   updatedAt: Date;
 };
+
+export type ApplicationListItem = Application & { jobTitle: string };
 
 export type PaginatedResult<T> = {
   items: T[];
@@ -148,7 +155,7 @@ export async function listJobApplications(
 export async function getMyApplications(
   userId: string,
   query: ApplicationQueryInput,
-): Promise<PaginatedResult<Application>> {
+): Promise<PaginatedResult<ApplicationListItem>> {
   const { page, limit } = query;
   const skip = (page - 1) * limit;
 
@@ -163,16 +170,21 @@ export async function getMyApplications(
 
   const where = { workerProfileId: workerProfile.id };
 
-  const [total, items] = await prisma.$transaction([
+  const [total, rawItems] = await prisma.$transaction([
     prisma.jobApplication.count({ where }),
     prisma.jobApplication.findMany({
       where,
-      select: applicationSelect,
+      select: applicationWithJobSelect,
       skip,
       take: limit,
       orderBy: { appliedAt: "desc" },
     }),
   ]);
+
+  const items: ApplicationListItem[] = rawItems.map(({ jobPosting, ...app }) => ({
+    ...app,
+    jobTitle: jobPosting.title,
+  }));
 
   return {
     items,

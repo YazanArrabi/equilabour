@@ -95,7 +95,7 @@ export default function MyApplicationsPage() {
                       to={`/jobs/${app.jobPostingId}`}
                       className="font-semibold hover:underline"
                     >
-                      Job #{app.jobPostingId.slice(0, 8)}
+                      {app.jobTitle ?? `Job #${app.jobPostingId.slice(0, 8)}`}
                     </Link>
                     <ApplicationStatusBadge status={app.status} />
                   </div>

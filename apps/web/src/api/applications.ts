@@ -6,6 +6,7 @@ export type ApplicationStatus = "pending" | "accepted" | "rejected";
 export interface Application {
   id: string;
   jobPostingId: string;
+  jobTitle?: string;
   workerProfileId: string;
   message: string | null;
   status: ApplicationStatus;

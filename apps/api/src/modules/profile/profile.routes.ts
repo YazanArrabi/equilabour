@@ -8,6 +8,20 @@ import * as workerProfileController from "./worker-profile.controller.js";
 
 const router = Router();
 
+// Worker list (browse)
+router.get(
+  "/workers",
+  requireAuth,
+  workerProfileController.listWorkerProfiles,
+);
+
+// /workers/locations MUST be registered before /workers/:workerId
+router.get(
+  "/workers/locations",
+  requireAuth,
+  workerProfileController.listWorkerLocations,
+);
+
 // Worker profile routes
 router.get(
   "/workers/me",

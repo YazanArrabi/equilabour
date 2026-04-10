@@ -65,7 +65,7 @@ function TagInput({
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === ",") {
+    if (e.key === "Enter") {
       e.preventDefault();
       addTag(inputValue);
     } else if (e.key === "Backspace" && inputValue === "" && value.length > 0) {
@@ -110,6 +110,8 @@ const schema = z.object({
   employmentType: z.enum(["full_time", "part_time", "contract", "internship", "freelance"]),
   location: z.string().optional(),
   salary: z.string().optional(),
+  payMin: z.number().int().min(0).optional(),
+  payMax: z.number().int().min(0).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -128,6 +130,8 @@ export default function CreateJobPage() {
       employmentType: "full_time",
       location: "",
       salary: "",
+      payMin: undefined,
+      payMax: undefined,
     },
   });
 
@@ -142,6 +146,8 @@ export default function CreateJobPage() {
         employmentType: values.employmentType,
         location: values.location?.trim() || undefined,
         salary: values.salary?.trim() || undefined,
+        payMin: values.payMin ?? null,
+        payMax: values.payMax ?? null,
       });
       navigate(`/jobs/${job.id}`);
     } catch (err) {
@@ -249,12 +255,52 @@ export default function CreateJobPage() {
                 name="salary"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Salary</FormLabel>
+                    <FormLabel>Salary (text)</FormLabel>
                     <FormControl><Input placeholder="e.g. $80,000–$100,000 / year" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="payMin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Min pay (USD/yr, optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="e.g. 60000"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="payMax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max pay (USD/yr, optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="e.g. 100000"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="requiredSkills"
@@ -265,7 +311,7 @@ export default function CreateJobPage() {
                       <TagInput
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder="Type a skill and press Enter or comma"
+                        placeholder="Type a skill and press Enter"
                       />
                     </FormControl>
                     <FormMessage />

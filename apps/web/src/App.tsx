@@ -7,6 +7,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import WorkerProfilePage from "@/pages/workers/WorkerProfilePage";
 import WorkerPublicProfilePage from "@/pages/workers/WorkerPublicProfilePage";
+import WorkersPage from "@/pages/workers/WorkersPage";
 import CompanyProfilePage from "@/pages/companies/CompanyProfilePage";
 import CompanyPublicProfilePage from "@/pages/companies/CompanyPublicProfilePage";
 import JobListingsPage from "@/pages/jobs/JobListingsPage";
@@ -32,6 +33,7 @@ const router = createBrowserRouter([
         children: [
           { path: "jobs", element: <JobListingsPage /> },
           { path: "jobs/:jobId", element: <JobDetailPage /> },
+          { path: "workers", element: <WorkersPage /> },
           { path: "workers/:workerId", element: <WorkerPublicProfilePage /> },
           {
             path: "companies/:companyId",

@@ -153,7 +153,7 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        {user?.role === "company" && (
+        {user?.role === "company" && user.profileId === job.companyProfileId && (
           <div className="flex gap-2 shrink-0">
             <Button
               variant="outline"
@@ -189,10 +189,18 @@ export default function JobDetailPage() {
             <p className="text-sm text-muted-foreground">Location</p>
             <p className="mt-0.5">{job.location ?? "Remote / Not specified"}</p>
           </div>
-          {job.salary && (
+          {(job.salary || job.payMin != null || job.payMax != null) && (
             <div>
-              <p className="text-sm text-muted-foreground">Salary</p>
-              <p className="mt-0.5">{job.salary}</p>
+              <p className="text-sm text-muted-foreground">Compensation</p>
+              <p className="mt-0.5">
+                {job.payMin != null && job.payMax != null
+                  ? `$${job.payMin.toLocaleString()} – $${job.payMax.toLocaleString()} / yr`
+                  : job.payMin != null
+                  ? `From $${job.payMin.toLocaleString()} / yr`
+                  : job.payMax != null
+                  ? `Up to $${job.payMax.toLocaleString()} / yr`
+                  : job.salary}
+              </p>
             </div>
           )}
           <div>

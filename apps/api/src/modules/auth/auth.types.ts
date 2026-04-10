@@ -1,6 +1,8 @@
 import type { User, UserRole } from "../../../generated/prisma/client.js";
 
-export type AuthUser = Pick<User, "id" | "email" | "role">;
+export type AuthUser = Pick<User, "id" | "email" | "role"> & {
+  profileId: string | null;
+};
 
 export type AccessTokenPayload = {
   sub: string;

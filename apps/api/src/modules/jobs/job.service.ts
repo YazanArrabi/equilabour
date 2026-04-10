@@ -17,6 +17,8 @@ const jobSelect = {
   employmentType: true,
   salary: true,
   location: true,
+  payMin: true,
+  payMax: true,
   status: true,
   postedAt: true,
   updatedAt: true,
@@ -32,6 +34,8 @@ export type Job = {
   employmentType: string;
   salary: string | null;
   location: string | null;
+  payMin: number | null;
+  payMax: number | null;
   status: string;
   postedAt: Date;
   updatedAt: Date;
@@ -68,6 +72,8 @@ export async function createJob(
       employmentType: input.employmentType,
       salary: input.salary ?? null,
       location: input.location ?? null,
+      payMin: input.payMin ?? null,
+      payMax: input.payMax ?? null,
     },
     select: jobSelect,
   });
@@ -76,16 +82,24 @@ export async function createJob(
 export async function listActiveJobs(
   query: JobQueryInput,
 ): Promise<PaginatedResult<Job>> {
-  const { page, limit, location, employmentType, experienceLevel } = query;
+  const { page, limit, search, location, employmentType, experienceLevel, payMin, payMax } = query;
   const skip = (page - 1) * limit;
 
   const where = {
     status: "active" as const,
+    ...(search !== undefined && search.trim() !== "" && {
+      OR: [
+        { title: { contains: search.trim(), mode: "insensitive" as const } },
+        { description: { contains: search.trim(), mode: "insensitive" as const } },
+      ],
+    }),
     ...(location !== undefined && {
       location: { contains: location, mode: "insensitive" as const },
     }),
-    ...(employmentType !== undefined && { employmentType }),
-    ...(experienceLevel !== undefined && { experienceLevel }),
+    ...(employmentType !== undefined && employmentType.length > 0 && { employmentType: { in: employmentType } }),
+    ...(experienceLevel !== undefined && experienceLevel.length > 0 && { experienceLevel: { in: experienceLevel } }),
+    ...(payMin !== undefined && { payMax: { gte: payMin } }),
+    ...(payMax !== undefined && { payMin: { lte: payMax } }),
   };
 
   const [total, items] = await prisma.$transaction([
@@ -247,6 +261,23 @@ export async function updateJobStatus(
     data: { status: newStatus },
     select: jobSelect,
   });
+}
+
+export async function listJobLocations(q?: string): Promise<string[]> {
+  const jobs = await prisma.jobPosting.findMany({
+    where: {
+      status: "active",
+      location: {
+        not: null,
+        ...(q ? { contains: q, mode: "insensitive" as const } : {}),
+      },
+    },
+    select: { location: true },
+    distinct: ["location"],
+    orderBy: { location: "asc" },
+    take: 20,
+  });
+  return jobs.map((j) => j.location).filter((l): l is string => l !== null);
 }
 
 export async function softDeleteJob(

@@ -4,6 +4,7 @@ export interface AuthUserData {
   id: string;
   email: string;
   role: "worker" | "company";
+  profileId: string | null;
 }
 
 export interface LoginInput {

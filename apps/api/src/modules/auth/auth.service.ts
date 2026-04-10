@@ -18,7 +18,10 @@ type AuthResult = {
   tokens: AuthTokenPair;
 };
 
-type AuthUserRecord = Pick<User, "id" | "email" | "role">;
+type AuthUserRecord = Pick<User, "id" | "email" | "role"> & {
+  workerProfile: { id: string } | null;
+  companyProfile: { id: string } | null;
+};
 
 type LoginUserRecord = AuthUserRecord & {
   passwordHash: string;
@@ -29,6 +32,7 @@ function toAuthUser(user: AuthUserRecord): AuthUser {
     id: user.id,
     email: user.email,
     role: user.role,
+    profileId: user.workerProfile?.id ?? user.companyProfile?.id ?? null,
   };
 }
 
@@ -46,6 +50,8 @@ export async function getAuthUserById(userId: string): Promise<AuthUser | null> 
       id: true,
       email: true,
       role: true,
+      workerProfile: { select: { id: true } },
+      companyProfile: { select: { id: true } },
     },
   });
 
@@ -92,6 +98,8 @@ export async function register(input: RegisterInput): Promise<AuthResult> {
         id: true,
         email: true,
         role: true,
+        workerProfile: { select: { id: true } },
+        companyProfile: { select: { id: true } },
       },
     });
 
@@ -120,6 +128,8 @@ export async function login(input: LoginInput): Promise<AuthResult> {
       email: true,
       role: true,
       passwordHash: true,
+      workerProfile: { select: { id: true } },
+      companyProfile: { select: { id: true } },
     },
   });
 
@@ -167,6 +177,8 @@ export async function refresh(rawRefreshToken: string): Promise<AuthResult> {
           id: true,
           email: true,
           role: true,
+          workerProfile: { select: { id: true } },
+          companyProfile: { select: { id: true } },
         },
       },
     },

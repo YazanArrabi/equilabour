@@ -39,7 +39,7 @@ export const authConfig = {
   refreshTokenCookieName: "refreshToken",
   accessTokenSecret: getRequiredEnv("JWT_ACCESS_SECRET"),
   refreshTokenSecret: getRequiredEnv("JWT_REFRESH_SECRET"),
-  accessTokenTtlSeconds: getPositiveNumberEnv("ACCESS_TOKEN_TTL_SECONDS", 900),
+  accessTokenTtlSeconds: getPositiveNumberEnv("ACCESS_TOKEN_TTL_SECONDS", 1800),
   refreshTokenTtlDays: getPositiveNumberEnv("REFRESH_TOKEN_TTL_DAYS", 7),
   secureCookies: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,

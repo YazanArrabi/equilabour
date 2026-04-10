@@ -1,5 +1,28 @@
 import { z } from "zod";
 
+export const WorkerProfileQuerySchema = z
+  .object({
+    search: z.string().optional(),
+    skills: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.split(",").map((s) => s.trim()).filter(Boolean) : undefined)),
+    experienceLevel: z
+      .string()
+      .optional()
+      .transform((v) =>
+        v
+          ? (v.split(",").filter(Boolean) as Array<"entry" | "junior" | "mid" | "senior">)
+          : undefined,
+      ),
+    location: z.string().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .strip();
+
+export type WorkerProfileQueryInput = z.infer<typeof WorkerProfileQuerySchema>;
+
 export const UpdateWorkerProfileSchema = z
   .object({
     fullName: z.string().trim().min(1, "Full name must not be empty.").optional(),

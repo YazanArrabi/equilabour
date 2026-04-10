@@ -24,6 +24,9 @@ router.post(
 
 router.get("/", requireAuth, jobController.listActiveJobs);
 
+// /locations MUST be registered before /:jobId to prevent "locations" being treated as a jobId
+router.get("/locations", requireAuth, jobController.listJobLocations);
+
 router.get("/:jobId", requireAuth, jobController.getJobById);
 
 router.patch(

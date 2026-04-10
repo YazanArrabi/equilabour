@@ -5,6 +5,7 @@ import { AppError } from "../../utils/app-error.js";
 import {
   CreateJobSchema,
   JobQuerySchema,
+  LocationQuerySchema,
   MyJobsQuerySchema,
   UpdateJobSchema,
   UpdateJobStatusSchema,
@@ -78,6 +79,15 @@ export async function updateJobStatus(req: Request, res: Response) {
   );
 
   return sendSuccess(res, job);
+}
+
+export async function listJobLocations(req: Request, res: Response) {
+  if (!req.auth) {
+    throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
+  }
+  const { q } = LocationQuerySchema.parse(req.query);
+  const locations = await jobService.listJobLocations(q);
+  return sendSuccess(res, locations);
 }
 
 export async function softDeleteJob(req: Request, res: Response) {

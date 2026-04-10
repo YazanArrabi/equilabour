@@ -2,8 +2,24 @@ import type { Request, Response } from "express";
 
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";
-import { UpdateWorkerProfileSchema } from "./worker-profile.schemas.js";
+import { UpdateWorkerProfileSchema, WorkerProfileQuerySchema } from "./worker-profile.schemas.js";
+import { LocationQuerySchema } from "../jobs/job.schemas.js";
 import * as workerProfileService from "./worker-profile.service.js";
+
+export async function listWorkerProfiles(req: Request, res: Response) {
+  const query = WorkerProfileQuerySchema.parse(req.query);
+  const result = await workerProfileService.listWorkerProfiles(query);
+  return sendSuccess(res, result);
+}
+
+export async function listWorkerLocations(req: Request, res: Response) {
+  if (!req.auth) {
+    throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
+  }
+  const { q } = LocationQuerySchema.parse(req.query);
+  const locations = await workerProfileService.listWorkerLocations(q);
+  return sendSuccess(res, locations);
+}
 
 export async function getMyWorkerProfile(req: Request, res: Response) {
   if (!req.auth) {

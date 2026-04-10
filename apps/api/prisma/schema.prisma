@@ -144,6 +144,9 @@ model JobPosting {
   salary   String?
   location String?
 
+  payMin Int?
+  payMax Int?
+
   status JobStatus @default(active)
 
   postedAt  DateTime @default(now())
@@ -158,6 +161,8 @@ model JobPosting {
   @@index([location])
   @@index([employmentType])
   @@index([experienceLevel])
+  @@index([payMin])
+  @@index([payMax])
 }
 
 model JobApplication {

@@ -18,6 +18,8 @@ export const CreateJobSchema = z
     employmentType: employmentTypeEnum,
     salary: z.string().nullable().optional(),
     location: z.string().nullable().optional(),
+    payMin: z.number().int().min(0).nullable().optional(),
+    payMax: z.number().int().min(0).nullable().optional(),
   })
   .strip();
 
@@ -30,6 +32,8 @@ export const UpdateJobSchema = z
     employmentType: employmentTypeEnum.optional(),
     salary: z.string().nullable().optional(),
     location: z.string().nullable().optional(),
+    payMin: z.number().int().min(0).nullable().optional(),
+    payMax: z.number().int().min(0).nullable().optional(),
   })
   .strip()
   .refine((data) => Object.keys(data).length > 0, {
@@ -42,11 +46,25 @@ export const UpdateJobStatusSchema = z
   })
   .strip();
 
+// Accepts comma-separated values for multi-select filters, e.g. "full_time,contract"
 export const JobQuerySchema = z
   .object({
+    search: z.string().optional(),
     location: z.string().optional(),
-    employmentType: employmentTypeEnum.optional(),
-    experienceLevel: experienceLevelEnum.optional(),
+    employmentType: z
+      .string()
+      .optional()
+      .transform((v) =>
+        v ? (v.split(",").filter(Boolean) as z.infer<typeof employmentTypeEnum>[]) : undefined,
+      ),
+    experienceLevel: z
+      .string()
+      .optional()
+      .transform((v) =>
+        v ? (v.split(",").filter(Boolean) as z.infer<typeof experienceLevelEnum>[]) : undefined,
+      ),
+    payMin: z.coerce.number().int().min(0).optional(),
+    payMax: z.coerce.number().int().min(0).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(50).default(20),
   })
@@ -57,6 +75,12 @@ export const MyJobsQuerySchema = z
     status: z.enum(["active", "closed", "deleted"]).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .strip();
+
+export const LocationQuerySchema = z
+  .object({
+    q: z.string().optional(),
   })
   .strip();
 

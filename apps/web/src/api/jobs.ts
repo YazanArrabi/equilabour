@@ -20,6 +20,8 @@ export interface Job {
   employmentType: EmploymentType;
   salary: string | null;
   location: string | null;
+  payMin: number | null;
+  payMax: number | null;
   status: JobStatus;
   postedAt: string;
   updatedAt: string;
@@ -33,6 +35,8 @@ export interface CreateJobInput {
   employmentType: EmploymentType;
   salary?: string;
   location?: string;
+  payMin?: number | null;
+  payMax?: number | null;
 }
 
 export interface UpdateJobInput {
@@ -43,6 +47,8 @@ export interface UpdateJobInput {
   employmentType?: EmploymentType;
   salary?: string | null;
   location?: string | null;
+  payMin?: number | null;
+  payMax?: number | null;
 }
 
 export interface JobListParams {
@@ -50,8 +56,10 @@ export interface JobListParams {
   limit?: number;
   search?: string;
   location?: string;
-  employmentType?: EmploymentType;
-  experienceLevel?: ExperienceLevel;
+  employmentType?: EmploymentType[];
+  experienceLevel?: ExperienceLevel[];
+  payMin?: number;
+  payMax?: number;
 }
 
 export function listJobs(params?: JobListParams) {
@@ -60,12 +68,17 @@ export function listJobs(params?: JobListParams) {
   if (params?.limit !== undefined) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
   if (params?.location) query.set("location", params.location);
-  if (params?.employmentType)
-    query.set("employmentType", params.employmentType);
-  if (params?.experienceLevel)
-    query.set("experienceLevel", params.experienceLevel);
+  if (params?.employmentType?.length) query.set("employmentType", params.employmentType.join(","));
+  if (params?.experienceLevel?.length) query.set("experienceLevel", params.experienceLevel.join(","));
+  if (params?.payMin !== undefined) query.set("payMin", String(params.payMin));
+  if (params?.payMax !== undefined) query.set("payMax", String(params.payMax));
   const qs = query.toString();
   return apiFetch<PaginatedResult<Job>>(`/jobs${qs ? `?${qs}` : ""}`);
+}
+
+export function listJobLocations(q?: string) {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return apiFetch<string[]>(`/jobs/locations${qs}`);
 }
 
 export function listMyJobs(params?: { page?: number; limit?: number }) {

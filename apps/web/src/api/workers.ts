@@ -1,4 +1,43 @@
+import type { PaginatedResult } from "./client";
 import { apiFetch } from "./client";
+
+export interface PublicWorkerProfile {
+  id: string;
+  fullName: string;
+  location: string | null;
+  skills: string[];
+  yearsOfExperience: number;
+  pastJobTitles: string[];
+  workExperienceSummary: string | null;
+}
+
+export type ExperienceLevel = "entry" | "junior" | "mid" | "senior";
+
+export interface WorkerListParams {
+  search?: string;
+  skills?: string;
+  experienceLevel?: ExperienceLevel[];
+  location?: string;
+  page?: number;
+  limit?: number;
+}
+
+export function listWorkers(params?: WorkerListParams) {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  if (params?.skills) query.set("skills", params.skills);
+  if (params?.experienceLevel?.length) query.set("experienceLevel", params.experienceLevel.join(","));
+  if (params?.location) query.set("location", params.location);
+  if (params?.page !== undefined) query.set("page", String(params.page));
+  if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  const qs = query.toString();
+  return apiFetch<PaginatedResult<PublicWorkerProfile>>(`/profiles/workers${qs ? `?${qs}` : ""}`);
+}
+
+export function listWorkerLocations(q?: string) {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return apiFetch<string[]>(`/profiles/workers/locations${qs}`);
+}
 
 export interface WorkerProfile {
   id: string;
