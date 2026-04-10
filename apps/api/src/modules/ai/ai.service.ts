@@ -133,7 +133,11 @@ ${filesText}`;
       throw new Error(`Unexpected content block type: ${block.type}`);
     }
 
-    const parsed = JSON.parse(block.text) as unknown;
+    let rawText = block.text.trim();
+    if (rawText.startsWith("```")) {
+      rawText = rawText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+    }
+    const parsed = JSON.parse(rawText) as unknown;
     const validated = AIOutputSchema.parse(parsed);
 
     await prisma.aIAnalysisResult.create({
