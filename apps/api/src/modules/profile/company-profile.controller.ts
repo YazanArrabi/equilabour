@@ -18,9 +18,8 @@ export async function getMyCompanyProfile(req: Request, res: Response) {
 }
 
 export async function getCompanyProfileById(req: Request, res: Response) {
-  const profile = await companyProfileService.getCompanyProfileById(
-    req.params.companyId,
-  );
+  const { companyId } = req.params as { companyId: string };
+  const profile = await companyProfileService.getCompanyProfileById(companyId);
 
   return sendSuccess(res, profile);
 }

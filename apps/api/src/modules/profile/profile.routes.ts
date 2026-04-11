@@ -6,7 +6,7 @@ import { requireRole } from "../auth/require-role.js";
 import * as companyProfileController from "./company-profile.controller.js";
 import * as workerProfileController from "./worker-profile.controller.js";
 
-const router = Router();
+const router: Router = Router();
 
 // Worker list (browse)
 router.get(

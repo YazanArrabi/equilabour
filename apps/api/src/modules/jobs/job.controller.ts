@@ -50,7 +50,8 @@ export async function getJobById(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
-  const job = await jobService.getJobById(req.params.jobId, req.auth.userId);
+  const { jobId } = req.params as { jobId: string };
+  const job = await jobService.getJobById(jobId, req.auth.userId);
 
   return sendSuccess(res, job);
 }
@@ -60,8 +61,9 @@ export async function updateJob(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
+  const { jobId } = req.params as { jobId: string };
   const input = UpdateJobSchema.parse(req.body);
-  const job = await jobService.updateJob(req.auth.userId, req.params.jobId, input);
+  const job = await jobService.updateJob(req.auth.userId, jobId, input);
 
   return sendSuccess(res, job);
 }
@@ -71,10 +73,11 @@ export async function updateJobStatus(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
+  const { jobId } = req.params as { jobId: string };
   const input = UpdateJobStatusSchema.parse(req.body);
   const job = await jobService.updateJobStatus(
     req.auth.userId,
-    req.params.jobId,
+    jobId,
     input.status,
   );
 
@@ -95,7 +98,8 @@ export async function softDeleteJob(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
-  const job = await jobService.softDeleteJob(req.auth.userId, req.params.jobId);
+  const { jobId } = req.params as { jobId: string };
+  const job = await jobService.softDeleteJob(req.auth.userId, jobId);
 
   return sendSuccess(res, job);
 }

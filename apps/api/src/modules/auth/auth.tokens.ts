@@ -95,7 +95,7 @@ function parseVerifiedPayload(
   return {
     sub: candidate.sub,
     role: candidate.role as UserRole,
-    type: candidate.type,
+    type: candidate.type as "access" | "refresh",
   };
 }
 

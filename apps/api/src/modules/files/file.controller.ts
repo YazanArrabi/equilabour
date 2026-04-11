@@ -59,10 +59,8 @@ export async function getFileDownloadUrl(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
-  const result = await fileService.getFileDownloadUrl(
-    req.auth.userId,
-    req.params.fileId,
-  );
+  const { fileId } = req.params as { fileId: string };
+  const result = await fileService.getFileDownloadUrl(req.auth.userId, fileId);
 
   return sendSuccess(res, result);
 }
@@ -72,10 +70,8 @@ export async function deleteFile(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
-  const result = await fileService.deleteFile(
-    req.auth.userId,
-    req.params.fileId,
-  );
+  const { fileId } = req.params as { fileId: string };
+  const result = await fileService.deleteFile(req.auth.userId, fileId);
 
   return sendSuccess(res, result);
 }

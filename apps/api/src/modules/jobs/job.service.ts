@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/app-error.js";
+import { stripUndefined } from "../../utils/strip-undefined.js";
 import type {
   CreateJobInput,
   JobQueryInput,
@@ -212,9 +213,10 @@ export async function updateJob(
     throw new AppError(409, "JOB_DELETED", "Cannot edit a deleted job.");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return prisma.jobPosting.update({
     where: { id: jobId },
-    data: input,
+    data: stripUndefined(input) as any,
     select: jobSelect,
   });
 }

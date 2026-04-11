@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/app-error.js";
+import { stripUndefined } from "../../utils/strip-undefined.js";
 import type { UpdateWorkerProfileInput, WorkerProfileQueryInput } from "./worker-profile.schemas.js";
 import { analyzeWorkerProfile } from "../ai/ai.service.js";
 
@@ -58,9 +59,10 @@ export async function updateWorkerProfile(
     throw new AppError(404, "PROFILE_NOT_FOUND", "Worker profile not found.");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updated = await prisma.workerProfile.update({
     where: { userId },
-    data: input,
+    data: stripUndefined(input) as any,
     select: workerProfileSelect,
   });
 

@@ -14,10 +14,11 @@ export async function applyToJob(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
+  const { jobId } = req.params as { jobId: string };
   const input = CreateApplicationSchema.parse(req.body);
   const application = await applicationService.createApplication(
     req.auth.userId,
-    req.params.jobId,
+    jobId,
     input,
   );
 
@@ -29,10 +30,11 @@ export async function listJobApplications(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
+  const { jobId } = req.params as { jobId: string };
   const query = ApplicationQuerySchema.parse(req.query);
   const result = await applicationService.listJobApplications(
     req.auth.userId,
-    req.params.jobId,
+    jobId,
     query,
   );
 
@@ -58,9 +60,10 @@ export async function getApplicationById(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
+  const { applicationId } = req.params as { applicationId: string };
   const application = await applicationService.getApplicationById(
     req.auth.userId,
-    req.params.applicationId,
+    applicationId,
   );
 
   return sendSuccess(res, application);
@@ -71,10 +74,11 @@ export async function updateApplicationStatus(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
+  const { applicationId } = req.params as { applicationId: string };
   const input = UpdateApplicationStatusSchema.parse(req.body);
   const application = await applicationService.updateApplicationStatus(
     req.auth.userId,
-    req.params.applicationId,
+    applicationId,
     input.status,
   );
 

@@ -5,7 +5,7 @@ import { requireAuth } from "../auth/require-auth.js";
 import { requireRole } from "../auth/require-role.js";
 import * as jobController from "./job.controller.js";
 
-const router = Router();
+const router: Router = Router();
 
 // /mine MUST be registered before /:jobId to prevent "mine" being treated as a jobId
 router.get(

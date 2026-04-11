@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/app-error.js";
+import { stripUndefined } from "../../utils/strip-undefined.js";
 import type { UpdateCompanyProfileInput } from "./company-profile.schemas.js";
 
 const companyProfileSelect = {
@@ -54,9 +55,10 @@ export async function updateCompanyProfile(
     throw new AppError(404, "PROFILE_NOT_FOUND", "Company profile not found.");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return prisma.companyProfile.update({
     where: { userId },
-    data: input,
+    data: stripUndefined(input) as any,
     select: companyProfileSelect,
   });
 }

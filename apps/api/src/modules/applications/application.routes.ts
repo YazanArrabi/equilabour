@@ -7,7 +7,7 @@ import * as applicationController from "./application.controller.js";
 
 // Handles POST /jobs/:jobId/applications and GET /jobs/:jobId/applications
 // mergeParams: true is required to access req.params.jobId from the parent route
-export const jobApplicationRouter = Router({ mergeParams: true });
+export const jobApplicationRouter: Router = Router({ mergeParams: true });
 
 jobApplicationRouter.post(
   "/",
@@ -26,7 +26,7 @@ jobApplicationRouter.get(
 // Handles GET /applications/mine, GET /applications/:applicationId,
 // and PATCH /applications/:applicationId/status
 // /mine MUST be registered before /:applicationId to prevent "mine" being treated as an ID
-const applicationRouter = Router();
+const applicationRouter: Router = Router();
 
 applicationRouter.get(
   "/mine",

@@ -34,9 +34,8 @@ export async function getMyWorkerProfile(req: Request, res: Response) {
 }
 
 export async function getWorkerProfileById(req: Request, res: Response) {
-  const profile = await workerProfileService.getWorkerProfileById(
-    req.params.workerId,
-  );
+  const { workerId } = req.params as { workerId: string };
+  const profile = await workerProfileService.getWorkerProfileById(workerId);
 
   return sendSuccess(res, profile);
 }
@@ -74,9 +73,8 @@ export async function getWorkerProfileAiAnalysis(req: Request, res: Response) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication is required.");
   }
 
-  const profile = await workerProfileService.getWorkerProfileById(
-    req.params.workerId,
-  );
+  const { workerId } = req.params as { workerId: string };
+  const profile = await workerProfileService.getWorkerProfileById(workerId);
   const analysis = await workerProfileService.getWorkerAiAnalysis(profile.id);
 
   return sendSuccess(res, { analysis });

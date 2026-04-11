@@ -129,6 +129,9 @@ ${filesText}`;
     });
 
     const block = response.content[0];
+    if (!block) {
+      throw new Error("AI response returned no content blocks.");
+    }
     if (block.type !== "text") {
       throw new Error(`Unexpected content block type: ${block.type}`);
     }
