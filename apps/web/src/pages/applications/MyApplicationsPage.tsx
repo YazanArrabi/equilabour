@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FileText, Briefcase } from "lucide-react";
 
 function formatPostedDate(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -27,9 +28,12 @@ function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {
 function CardSkeleton() {
   return (
     <Card>
-      <CardContent className="py-4 space-y-2">
-        <Skeleton className="h-5 w-1/2" />
-        <Skeleton className="h-4 w-1/4" />
+      <CardContent className="p-5 space-y-2">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <Skeleton className="h-3 w-1/4" />
         <Skeleton className="h-4 w-3/4" />
       </CardContent>
     </Card>
@@ -61,7 +65,14 @@ export default function MyApplicationsPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-      <h1 className="text-2xl font-bold">My Applications</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">My Applications</h1>
+        {!isLoading && applications.length > 0 && (
+          <span className="text-sm text-muted-foreground">
+            {applications.length} application{applications.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -74,9 +85,13 @@ export default function MyApplicationsPage() {
           {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : applications.length === 0 ? (
-        <div className="space-y-3 text-center py-8">
-          <p className="text-sm text-muted-foreground">You haven't applied to any jobs yet.</p>
-          <Button onClick={() => navigate("/jobs")}>Browse jobs</Button>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <FileText className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">No applications yet</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Start exploring jobs and apply to ones that interest you.
+          </p>
+          <Button size="sm" onClick={() => navigate("/jobs")}>Browse jobs</Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -88,24 +103,27 @@ export default function MyApplicationsPage() {
               : null;
 
             return (
-              <Card key={app.id}>
-                <CardContent className="py-4 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Link
-                      to={`/jobs/${app.jobPostingId}`}
-                      className="font-semibold hover:underline"
-                    >
-                      {app.jobTitle ?? `Job #${app.jobPostingId.slice(0, 8)}`}
-                    </Link>
+              <Card key={app.id} className="hover:border-primary/30 transition-colors">
+                <CardContent className="p-5 space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <Link
+                        to={`/jobs/${app.jobPostingId}`}
+                        className="font-semibold hover:underline text-foreground leading-snug"
+                      >
+                        {app.jobTitle ?? `Job #${app.jobPostingId.slice(0, 8)}`}
+                      </Link>
+                    </div>
                     <ApplicationStatusBadge status={app.status} />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Applied {formatPostedDate(app.appliedAt)}
                   </p>
-                  {messagePreview ? (
-                    <p className="text-sm">{messagePreview}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No message provided</p>
+                  {messagePreview && (
+                    <p className="text-sm text-foreground/80 leading-relaxed border-l-2 border-border pl-3">
+                      {messagePreview}
+                    </p>
                   )}
                 </CardContent>
               </Card>

@@ -62,10 +62,11 @@ function formatPostedDate(iso: string): string {
 }
 
 function formatPay(job: Job): string | null {
+  const fmt = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`);
   if (job.payMin != null && job.payMax != null)
-    return `$${job.payMin.toLocaleString()} – $${job.payMax.toLocaleString()} / yr`;
-  if (job.payMin != null) return `From $${job.payMin.toLocaleString()} / yr`;
-  if (job.payMax != null) return `Up to $${job.payMax.toLocaleString()} / yr`;
+    return `${fmt(job.payMin)} – ${fmt(job.payMax)} / yr`;
+  if (job.payMin != null) return `From ${fmt(job.payMin)} / yr`;
+  if (job.payMax != null) return `Up to ${fmt(job.payMax)} / yr`;
   return job.salary;
 }
 
@@ -160,24 +161,56 @@ export default function JobDetailPage() {
   const canApply = user?.role === "worker" && applyResult === null && !applyOpen;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
+    <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
       {/* Back link */}
       <Link to="/jobs" className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1">
         ← Back to listings
       </Link>
 
-      {/* Hero section */}
-      <div className="space-y-3">
+      {/* Hero card */}
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold leading-tight">{job.title}</h1>
             <Link
               to={`/companies/${job.companyProfileId}`}
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mt-1"
             >
               <Building2 className="h-4 w-4 shrink-0" />
               <span className="font-medium">{job.companyName}</span>
             </Link>
+
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${EMPLOYMENT_TYPE_COLORS[job.employmentType]}`}>
+                {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
+              </span>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[job.experienceLevel]}`}>
+                {EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}
+              </span>
+              {job.status !== "active" && (
+                <Badge variant={job.status === "deleted" ? "destructive" : "outline"}>
+                  {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                </Badge>
+              )}
+            </div>
+
+            {/* Meta */}
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground mt-3">
+              {job.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  {job.location}
+                </span>
+              )}
+              {pay && (
+                <span className="text-primary font-semibold">{pay}</span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 shrink-0" />
+                {formatPostedDate(job.postedAt)}
+              </span>
+            </div>
           </div>
 
           {isOwner && (
@@ -200,37 +233,6 @@ export default function JobDetailPage() {
             </div>
           )}
         </div>
-
-        {/* Badges + meta */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${EMPLOYMENT_TYPE_COLORS[job.employmentType]}`}>
-            {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
-          </span>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[job.experienceLevel]}`}>
-            {EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}
-          </span>
-          {job.status !== "active" && (
-            <Badge variant={job.status === "deleted" ? "destructive" : "outline"}>
-              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-            </Badge>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
-          {job.location && (
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 shrink-0" />
-              {job.location}
-            </span>
-          )}
-          {pay && (
-            <span className="text-primary font-semibold text-base">{pay}</span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4 shrink-0" />
-            {formatPostedDate(job.postedAt)}
-          </span>
-        </div>
       </div>
 
       {deleteError && (
@@ -241,21 +243,24 @@ export default function JobDetailPage() {
 
       {/* Worker apply CTA — prominent, above the fold */}
       {user?.role === "worker" && (
-        <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between gap-4">
+        <div className="rounded-lg border bg-primary/5 border-primary/20 p-4 flex items-center justify-between gap-4">
           {applyResult === "success" && (
             <div className="flex items-center gap-2 text-green-700">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-medium">Application submitted successfully!</span>
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              <span className="font-medium text-sm">Application submitted successfully!</span>
             </div>
           )}
           {applyResult === "already_applied" && (
-            <p className="text-sm text-muted-foreground">You have already applied to this job.</p>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-muted-foreground shrink-0" />
+              <p className="text-sm text-muted-foreground">You have already applied to this job.</p>
+            </div>
           )}
           {canApply && (
             <>
               <div className="min-w-0">
-                <p className="font-medium text-sm">Interested in this role?</p>
-                <p className="text-xs text-muted-foreground">Apply now and stand out to {job.companyName}</p>
+                <p className="font-semibold text-sm">Interested in this role?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Apply now and stand out to {job.companyName}</p>
               </div>
               <Button size="default" className="shrink-0" onClick={() => setApplyOpen(true)}>
                 Apply now

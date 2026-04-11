@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Briefcase } from "lucide-react";
 
 const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   full_time: "Full Time",
@@ -157,23 +158,25 @@ export default function MyJobsPage() {
           {Array.from({ length: 4 }).map((_, i) => <RowSkeleton key={i} />)}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="space-y-3 text-center py-8">
-          <p className="text-sm text-muted-foreground">You have not posted any jobs yet.</p>
-          <Button onClick={() => navigate("/jobs/new")}>Post a job</Button>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Briefcase className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">No jobs yet</h3>
+          <p className="text-sm text-muted-foreground mb-4">Post your first job to start finding candidates.</p>
+          <Button size="sm" onClick={() => navigate("/jobs/new")}>Post a job</Button>
         </div>
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
-            <Card key={job.id}>
-              <CardContent className="py-4 space-y-3">
-                <div className="space-y-1">
-                  <p className="font-semibold">{job.title}</p>
+            <Card key={job.id} className="hover:border-primary/30 transition-colors">
+              <CardContent className="p-5 space-y-3">
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-base">{job.title}</p>
                   <div className="flex flex-wrap gap-1.5">
                     <StatusBadge status={job.status} />
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EMPLOYMENT_TYPE_COLORS[job.employmentType]}`}>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${EMPLOYMENT_TYPE_COLORS[job.employmentType]}`}>
                       {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
                     </span>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[job.experienceLevel]}`}>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[job.experienceLevel]}`}>
                       {EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}
                     </span>
                   </div>

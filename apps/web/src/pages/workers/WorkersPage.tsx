@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocationCombobox } from "@/components/ui/location-combobox";
-import { Search, SlidersHorizontal, MapPin } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, Users } from "lucide-react";
 
 const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
   entry: "Entry Level",
@@ -86,10 +86,10 @@ function WorkerCard({ worker, onClick }: { worker: PublicWorkerProfile; onClick:
 
   return (
     <Card
-      className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+      className="cursor-pointer hover:border-primary/40 hover:bg-muted/30 transition-all"
       onClick={onClick}
     >
-      <CardContent className="py-4 space-y-2.5">
+      <CardContent className="p-5 space-y-3">
         {/* Name + avatar */}
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0 select-none">
@@ -317,11 +317,16 @@ export default function WorkersPage() {
           {Array.from({ length: 4 }).map((_, i) => <WorkerCardSkeleton key={i} />)}
         </div>
       ) : workers.length === 0 ? (
-        <div className="text-center py-12 space-y-2">
-          <p className="text-muted-foreground font-medium">No workers found</p>
-          {(search || hasActiveFilters) && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">No workers found</h3>
+          {(search || hasActiveFilters) ? (
             <p className="text-sm text-muted-foreground">
               Try adjusting your search or clearing the filters.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No workers are registered yet. Check back soon.
             </p>
           )}
         </div>

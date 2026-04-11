@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocationCombobox } from "@/components/ui/location-combobox";
-import { Search, SlidersHorizontal, Building2, MapPin, Clock } from "lucide-react";
+import { Search, SlidersHorizontal, Building2, MapPin, Clock, Briefcase } from "lucide-react";
 
 const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   full_time: "Full Time",
@@ -60,10 +60,11 @@ function formatPostedDate(iso: string): string {
 }
 
 function formatPay(job: Job): string | null {
+  const fmt = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`);
   if (job.payMin != null && job.payMax != null)
-    return `$${job.payMin.toLocaleString()} – $${job.payMax.toLocaleString()} / yr`;
-  if (job.payMin != null) return `From $${job.payMin.toLocaleString()} / yr`;
-  if (job.payMax != null) return `Up to $${job.payMax.toLocaleString()} / yr`;
+    return `${fmt(job.payMin)} – ${fmt(job.payMax)} / yr`;
+  if (job.payMin != null) return `From ${fmt(job.payMin)} / yr`;
+  if (job.payMax != null) return `Up to ${fmt(job.payMax)} / yr`;
   return job.salary;
 }
 
@@ -366,11 +367,16 @@ export default function JobListingsPage() {
           {Array.from({ length: 4 }).map((_, i) => <JobCardSkeleton key={i} />)}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="text-center py-12 space-y-2">
-          <p className="text-muted-foreground font-medium">No jobs found</p>
-          {(search || hasActiveFilters) && (
-            <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Briefcase className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">No jobs found</h3>
+          {(search || hasActiveFilters) ? (
+            <p className="text-sm text-muted-foreground mb-4">
               Try adjusting your search or clearing the filters.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground mb-4">
+              Check back soon — new jobs are posted regularly.
             </p>
           )}
         </div>

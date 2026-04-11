@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Users } from "lucide-react";
 
 function formatPostedDate(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -20,6 +21,15 @@ function formatPostedDate(iso: string): string {
   if (days === 1) return "Yesterday";
   if (days <= 30) return `${days} days ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {
@@ -33,9 +43,14 @@ function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {
 function CardSkeleton() {
   return (
     <Card>
-      <CardContent className="py-4 space-y-2">
-        <Skeleton className="h-5 w-1/2" />
-        <Skeleton className="h-4 w-1/4" />
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+          <div className="space-y-1.5 flex-1">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+        </div>
         <Skeleton className="h-16 w-full" />
         <Skeleton className="h-8 w-1/3" />
       </CardContent>
@@ -115,7 +130,12 @@ export default function JobApplicationsPage() {
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold">{heading}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{heading}</h1>
+        {!isLoading && applications.length > 0 && (
+          <span className="text-sm text-muted-foreground">{applications.length} applicant{applications.length !== 1 ? "s" : ""}</span>
+        )}
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -128,56 +148,81 @@ export default function JobApplicationsPage() {
           {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : applications.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No applications yet for this job.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">No applications yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Applications will appear here once candidates apply.
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {applications.map((app) => (
-            <Card key={app.id}>
-              <CardContent className="py-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <Link
-                    to={`/workers/${app.workerProfileId}`}
-                    className="font-semibold hover:underline"
-                  >
-                    {app.workerName ?? `Applicant #${app.workerProfileId.slice(0, 8)}`}
-                  </Link>
-                  <ApplicationStatusBadge status={app.status} />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Applied {formatPostedDate(app.appliedAt)}
-                </p>
-                {app.message ? (
-                  <p className="text-sm whitespace-pre-wrap">{app.message}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No message provided</p>
-                )}
-                {app.status === "pending" && (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        disabled={pendingAction === app.id}
-                        onClick={() => handleAction(app.id, "accepted")}
-                      >
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={pendingAction === app.id}
-                        onClick={() => handleAction(app.id, "rejected")}
-                      >
-                        Reject
-                      </Button>
+          {applications.map((app) => {
+            const name = app.workerName ?? `Applicant #${app.workerProfileId.slice(0, 8)}`;
+            const initials = getInitials(name);
+
+            return (
+              <Card key={app.id} className="hover:border-primary/30 transition-colors">
+                <CardContent className="p-5 space-y-3">
+                  {/* Header: avatar + name + status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-semibold text-primary">{initials}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <Link
+                          to={`/workers/${app.workerProfileId}`}
+                          className="font-semibold hover:underline text-foreground"
+                        >
+                          {name}
+                        </Link>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Applied {formatPostedDate(app.appliedAt)}
+                        </p>
+                      </div>
                     </div>
-                    {actionErrors[app.id] && (
-                      <p className="text-sm text-destructive">{actionErrors[app.id]}</p>
-                    )}
+                    <ApplicationStatusBadge status={app.status} />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* Message */}
+                  {app.message ? (
+                    <p className="text-sm whitespace-pre-wrap text-foreground/80 leading-relaxed border-l-2 border-border pl-3">
+                      {app.message}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No message provided</p>
+                  )}
+
+                  {/* Actions */}
+                  {app.status === "pending" && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={pendingAction === app.id}
+                          onClick={() => handleAction(app.id, "accepted")}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={pendingAction === app.id}
+                          onClick={() => handleAction(app.id, "rejected")}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                      {actionErrors[app.id] && (
+                        <p className="text-sm text-destructive">{actionErrors[app.id]}</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

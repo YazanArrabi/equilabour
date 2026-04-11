@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { MapPin, Layers } from "lucide-react";
 import {
   getMyCompanyProfile,
   updateMyCompanyProfile,
@@ -35,8 +36,15 @@ function empty(val: string | null | undefined): string {
 function ProfileSkeleton() {
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
-      <Skeleton className="h-10 w-48" />
-      <Skeleton className="h-4 w-32" />
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-14 w-14 rounded-lg shrink-0" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+      </div>
       <Skeleton className="h-36 w-full" />
       <Skeleton className="h-32 w-full" />
     </div>
@@ -265,22 +273,39 @@ export default function CompanyProfilePage() {
     .slice(0, 2);
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-lg font-bold select-none shrink-0">
-            {initials}
+    <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
+      {/* Company hero card */}
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-5 min-w-0">
+            <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-base font-bold text-primary">{initials}</span>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold leading-tight">{profile.companyName}</h1>
+              {profile.industry && (
+                <p className="text-muted-foreground text-sm mt-0.5">{profile.industry}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+                {profile.location && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {profile.location}
+                  </span>
+                )}
+                {profile.industry && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Layers className="h-3.5 w-3.5 shrink-0" />
+                    {profile.industry}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">{profile.companyName}</h1>
-            <p className="text-muted-foreground">
-              {profile.industry ? profile.industry : "Company Profile"}
-            </p>
-          </div>
+          <Button variant="outline" size="sm" onClick={enterEditMode} className="shrink-0">
+            Edit profile
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={enterEditMode}>
-          Edit profile
-        </Button>
       </div>
 
       <Card>
@@ -289,16 +314,16 @@ export default function CompanyProfilePage() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Location</p>
-            <p className="mt-0.5">{empty(profile.location)}</p>
+            <p className="text-sm font-medium text-muted-foreground">Location</p>
+            <p className="mt-0.5 text-sm">{empty(profile.location)}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Industry</p>
-            <p className="mt-0.5">{empty(profile.industry)}</p>
+            <p className="text-sm font-medium text-muted-foreground">Industry</p>
+            <p className="mt-0.5 text-sm">{empty(profile.industry)}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Contact</p>
-            <p className="mt-0.5 whitespace-pre-wrap">{empty(profile.contactInfo)}</p>
+            <p className="text-sm font-medium text-muted-foreground">Contact</p>
+            <p className="mt-0.5 text-sm whitespace-pre-wrap">{empty(profile.contactInfo)}</p>
           </div>
         </CardContent>
       </Card>
@@ -308,7 +333,7 @@ export default function CompanyProfilePage() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-wrap">{empty(profile.overview)}</p>
+          <p className="text-sm whitespace-pre-wrap leading-relaxed">{empty(profile.overview)}</p>
         </CardContent>
       </Card>
     </div>

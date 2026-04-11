@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MapPin, Briefcase } from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -38,8 +39,15 @@ function empty(val: string | null | undefined): string {
 function ProfileSkeleton() {
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
-      <Skeleton className="h-10 w-48" />
-      <Skeleton className="h-4 w-32" />
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full shrink-0" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+      </div>
       <Skeleton className="h-36 w-full" />
       <Skeleton className="h-24 w-full" />
       <Skeleton className="h-40 w-full" />
@@ -407,49 +415,49 @@ export default function WorkerProfilePage() {
 
   const headlineTitle = profile.pastJobTitles[0] ?? null;
 
-  return (
-    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-      {/* Profile header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold select-none shrink-0">
-            {initials}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">{profile.fullName}</h1>
-            <p className="text-muted-foreground">
-              {headlineTitle ?? "Worker Profile"}
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={enterEditMode}>
-          Edit profile
-        </Button>
-      </div>
+  const experienceLabel =
+    profile.yearsOfExperience === 0
+      ? "< 1 year experience"
+      : profile.yearsOfExperience === 1
+      ? "1 year experience"
+      : `${profile.yearsOfExperience} years experience`;
 
-      <Card>
-        <CardHeader>
-          <CardTitle>About</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Location</p>
-            <p className="mt-0.5">{empty(profile.location)}</p>
+  return (
+    <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
+      {/* Profile hero card */}
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-5 min-w-0">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-xl font-bold text-primary">{initials}</span>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold leading-tight">{profile.fullName}</h1>
+              {headlineTitle && (
+                <p className="text-muted-foreground text-sm mt-0.5">{headlineTitle}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+                {profile.location && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {profile.location}
+                  </span>
+                )}
+                {profile.phoneNumber && (
+                  <span className="text-sm text-muted-foreground">{profile.phoneNumber}</span>
+                )}
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                  {experienceLabel}
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Phone</p>
-            <p className="mt-0.5">{empty(profile.phoneNumber)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Experience</p>
-            <p className="mt-0.5">
-              {profile.yearsOfExperience === 0
-                ? "—"
-                : `${profile.yearsOfExperience} year${profile.yearsOfExperience === 1 ? "" : "s"}`}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          <Button variant="outline" size="sm" onClick={enterEditMode} className="shrink-0">
+            Edit profile
+          </Button>
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
@@ -457,7 +465,7 @@ export default function WorkerProfilePage() {
         </CardHeader>
         <CardContent>
           {profile.skills.length === 0 ? (
-            <p className="text-sm text-muted-foreground">—</p>
+            <p className="text-sm text-muted-foreground">No skills added yet. Edit your profile to add some.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {profile.skills.map((skill) => (
@@ -476,17 +484,17 @@ export default function WorkerProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-sm text-muted-foreground">Summary</p>
-            <p className="mt-0.5 whitespace-pre-wrap">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Summary</p>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
               {empty(profile.workExperienceSummary)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Past job titles</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Past job titles</p>
             {profile.pastJobTitles.length === 0 ? (
-              <p className="mt-0.5">—</p>
+              <p className="text-sm">—</p>
             ) : (
-              <div className="flex flex-wrap gap-1.5 mt-1">
+              <div className="flex flex-wrap gap-1.5">
                 {profile.pastJobTitles.map((title) => (
                   <Badge key={title} variant="secondary">
                     {title}
@@ -496,8 +504,8 @@ export default function WorkerProfilePage() {
             )}
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Employment history</p>
-            <p className="mt-0.5 whitespace-pre-wrap">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Employment history</p>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
               {empty(profile.employmentHistory)}
             </p>
           </div>
