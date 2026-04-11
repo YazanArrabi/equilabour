@@ -42,6 +42,7 @@ export function listWorkerLocations(q?: string) {
 export interface WorkerProfile {
   id: string;
   userId: string;
+  email: string;
   fullName: string;
   phoneNumber: string | null;
   location: string | null;
@@ -55,9 +56,10 @@ export interface WorkerProfile {
   updatedAt: string;
 }
 
+// phoneNumber and email are verified credentials — they cannot be changed
+// through profile editing. A dedicated verification flow is required.
 export interface UpdateWorkerProfileInput {
   fullName?: string;
-  phoneNumber?: string | null;
   location?: string | null;
   skills?: string[];
   yearsOfExperience?: number;

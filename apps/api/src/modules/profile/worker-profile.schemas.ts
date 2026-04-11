@@ -23,10 +23,11 @@ export const WorkerProfileQuerySchema = z
 
 export type WorkerProfileQueryInput = z.infer<typeof WorkerProfileQuerySchema>;
 
+// phoneNumber and email are verified credentials — they cannot be changed
+// through the profile edit endpoint. A dedicated verification flow is required.
 export const UpdateWorkerProfileSchema = z
   .object({
     fullName: z.string().trim().min(1, "Full name must not be empty.").optional(),
-    phoneNumber: z.string().nullable().optional(),
     location: z.string().nullable().optional(),
     skills: z.array(z.string()).optional(),
     yearsOfExperience: z

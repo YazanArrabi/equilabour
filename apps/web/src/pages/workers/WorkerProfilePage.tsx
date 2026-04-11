@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, Briefcase } from "lucide-react";
+import { MapPin, Briefcase, Mail, Phone } from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -121,7 +121,6 @@ function TagInput({
 const schema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   location: z.string().optional(),
-  phoneNumber: z.string().optional(),
   yearsOfExperience: z.number().min(0, "Must be 0 or more"),
   skills: z.array(z.string()),
   workExperienceSummary: z.string().optional(),
@@ -135,7 +134,6 @@ function toFormValues(profile: WorkerProfile): FormValues {
   return {
     fullName: profile.fullName,
     location: profile.location ?? "",
-    phoneNumber: profile.phoneNumber ?? "",
     yearsOfExperience: profile.yearsOfExperience,
     skills: profile.skills,
     workExperienceSummary: profile.workExperienceSummary ?? "",
@@ -158,7 +156,6 @@ export default function WorkerProfilePage() {
     defaultValues: {
       fullName: "",
       location: "",
-      phoneNumber: "",
       yearsOfExperience: 0,
       skills: [],
       workExperienceSummary: "",
@@ -196,7 +193,6 @@ export default function WorkerProfilePage() {
       const updated = await updateMyWorkerProfile({
         fullName: values.fullName,
         location: values.location?.trim() || null,
-        phoneNumber: values.phoneNumber?.trim() || null,
         yearsOfExperience: values.yearsOfExperience,
         skills: values.skills,
         workExperienceSummary: values.workExperienceSummary?.trim() || null,
@@ -270,19 +266,6 @@ export default function WorkerProfilePage() {
                       <FormLabel>Location</FormLabel>
                       <FormControl>
                         <Input placeholder="City, Country" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+1 555 000 0000" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -443,8 +426,15 @@ export default function WorkerProfilePage() {
                     {profile.location}
                   </span>
                 )}
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  {profile.email}
+                </span>
                 {profile.phoneNumber && (
-                  <span className="text-sm text-muted-foreground">{profile.phoneNumber}</span>
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    {profile.phoneNumber}
+                  </span>
                 )}
                 <span className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Briefcase className="h-3.5 w-3.5 shrink-0" />
