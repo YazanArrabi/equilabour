@@ -55,7 +55,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-6">
+      <div className="flex items-center gap-0 select-none">
+        <span className="text-2xl font-black tracking-tight text-slate-800">Equi</span>
+        <span className="text-2xl font-black tracking-tight text-primary">Labour</span>
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome back</CardTitle>

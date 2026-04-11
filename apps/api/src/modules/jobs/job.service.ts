@@ -11,6 +11,7 @@ import type {
 const jobSelect = {
   id: true,
   companyProfileId: true,
+  companyProfile: { select: { companyName: true } },
   title: true,
   description: true,
   requiredSkills: true,
@@ -28,6 +29,7 @@ const jobSelect = {
 export type Job = {
   id: string;
   companyProfileId: string;
+  companyName: string;
   title: string;
   description: string;
   requiredSkills: string[];
@@ -41,6 +43,15 @@ export type Job = {
   postedAt: Date;
   updatedAt: Date;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fmtJob(raw: any): Job {
+  const { companyProfile, ...rest } = raw as Record<string, unknown>;
+  return {
+    ...rest,
+    companyName: (companyProfile as { companyName: string } | null)?.companyName ?? "",
+  } as Job;
+}
 
 export type PaginatedResult<T> = {
   items: T[];
@@ -63,7 +74,7 @@ export async function createJob(
     throw new AppError(404, "PROFILE_NOT_FOUND", "Company profile not found.");
   }
 
-  return prisma.jobPosting.create({
+  const raw = await prisma.jobPosting.create({
     data: {
       companyProfileId: companyProfile.id,
       title: input.title,
@@ -78,6 +89,7 @@ export async function createJob(
     },
     select: jobSelect,
   });
+  return fmtJob(raw);
 }
 
 export async function listActiveJobs(
@@ -103,7 +115,7 @@ export async function listActiveJobs(
     ...(payMax !== undefined && { payMin: { lte: payMax } }),
   };
 
-  const [total, items] = await prisma.$transaction([
+  const [total, rawItems] = await prisma.$transaction([
     prisma.jobPosting.count({ where }),
     prisma.jobPosting.findMany({
       where,
@@ -115,7 +127,7 @@ export async function listActiveJobs(
   ]);
 
   return {
-    items,
+    items: rawItems.map(fmtJob),
     total,
     page,
     limit,
@@ -144,7 +156,7 @@ export async function listMyJobs(
     ...(status !== undefined && { status }),
   };
 
-  const [total, items] = await prisma.$transaction([
+  const [total, rawItems] = await prisma.$transaction([
     prisma.jobPosting.count({ where }),
     prisma.jobPosting.findMany({
       where,
@@ -156,7 +168,7 @@ export async function listMyJobs(
   ]);
 
   return {
-    items,
+    items: rawItems.map(fmtJob),
     total,
     page,
     limit,
@@ -184,7 +196,7 @@ export async function getJobById(
     throw new AppError(404, "JOB_NOT_FOUND", "Job not found.");
   }
 
-  return job;
+  return fmtJob(job);
 }
 
 export async function updateJob(
@@ -213,12 +225,13 @@ export async function updateJob(
     throw new AppError(409, "JOB_DELETED", "Cannot edit a deleted job.");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return prisma.jobPosting.update({
+  const raw = await prisma.jobPosting.update({
     where: { id: jobId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: stripUndefined(input) as any,
     select: jobSelect,
   });
+  return fmtJob(raw);
 }
 
 export async function updateJobStatus(
@@ -252,17 +265,19 @@ export async function updateJobStatus(
   }
 
   if (job.status === newStatus) {
-    return prisma.jobPosting.findUniqueOrThrow({
+    const raw = await prisma.jobPosting.findUniqueOrThrow({
       where: { id: jobId },
       select: jobSelect,
     });
+    return fmtJob(raw);
   }
 
-  return prisma.jobPosting.update({
+  const raw = await prisma.jobPosting.update({
     where: { id: jobId },
     data: { status: newStatus },
     select: jobSelect,
   });
+  return fmtJob(raw);
 }
 
 export async function listJobLocations(q?: string): Promise<string[]> {
@@ -304,15 +319,17 @@ export async function softDeleteJob(
   }
 
   if (job.status === "deleted") {
-    return prisma.jobPosting.findUniqueOrThrow({
+    const raw = await prisma.jobPosting.findUniqueOrThrow({
       where: { id: jobId },
       select: jobSelect,
     });
+    return fmtJob(raw);
   }
 
-  return prisma.jobPosting.update({
+  const raw = await prisma.jobPosting.update({
     where: { id: jobId },
     data: { status: "deleted" },
     select: jobSelect,
   });
+  return fmtJob(raw);
 }

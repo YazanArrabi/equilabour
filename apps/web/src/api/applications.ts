@@ -8,6 +8,7 @@ export interface Application {
   jobPostingId: string;
   jobTitle?: string;
   workerProfileId: string;
+  workerName?: string;
   message: string | null;
   status: ApplicationStatus;
   appliedAt: string;

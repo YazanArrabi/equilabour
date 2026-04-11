@@ -116,7 +116,6 @@ const schema = z.object({
   experienceLevel: z.enum(["entry", "junior", "mid", "senior"]),
   employmentType: z.enum(["full_time", "part_time", "contract", "internship", "freelance"]),
   location: z.string().optional(),
-  salary: z.string().optional(),
   payMin: z.number().int().min(0).optional(),
   payMax: z.number().int().min(0).optional(),
 });
@@ -131,7 +130,6 @@ function toFormValues(job: Job): FormValues {
     experienceLevel: job.experienceLevel,
     employmentType: job.employmentType,
     location: job.location ?? "",
-    salary: job.salary ?? "",
     payMin: job.payMin ?? undefined,
     payMax: job.payMax ?? undefined,
   };
@@ -162,7 +160,6 @@ export default function EditJobPage() {
       experienceLevel: "mid",
       employmentType: "full_time",
       location: "",
-      salary: "",
     },
   });
 
@@ -187,7 +184,6 @@ export default function EditJobPage() {
         experienceLevel: values.experienceLevel,
         employmentType: values.employmentType,
         location: values.location?.trim() || null,
-        salary: values.salary?.trim() || null,
         payMin: values.payMin ?? null,
         payMax: values.payMax ?? null,
       });
@@ -304,24 +300,13 @@ export default function EditJobPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="salary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Salary (text)</FormLabel>
-                    <FormControl><Input placeholder="e.g. $80,000–$100,000 / year" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="payMin"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Min pay (USD/yr, optional)</FormLabel>
+                      <FormLabel>Min pay / yr (USD, optional)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -340,7 +325,7 @@ export default function EditJobPage() {
                   name="payMax"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max pay (USD/yr, optional)</FormLabel>
+                      <FormLabel>Max pay / yr (USD, optional)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"

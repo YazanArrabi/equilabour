@@ -165,3 +165,35 @@ export function getRefreshTokenExpiresAt(): Date {
     Date.now() + authConfig.refreshTokenTtlDays * 24 * 60 * 60 * 1000,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Pending-verification tokens (short-lived, different secret, limited purpose)
+// ---------------------------------------------------------------------------
+
+export function createPendingToken(userId: string): string {
+  return jwt.sign(
+    { sub: userId, type: "pending" },
+    getRequiredEnv("PENDING_JWT_SECRET"),
+    { expiresIn: 900 }, // 15 minutes
+  );
+}
+
+export function verifyPendingToken(token: string): { sub: string } {
+  try {
+    const decoded = jwt.verify(token, getRequiredEnv("PENDING_JWT_SECRET"));
+
+    if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      typeof (decoded as Record<string, unknown>).sub !== "string" ||
+      (decoded as Record<string, unknown>).type !== "pending"
+    ) {
+      throw new AppError(401, "INVALID_TOKEN", "Invalid verification token.");
+    }
+
+    return { sub: (decoded as { sub: string }).sub };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(401, "INVALID_TOKEN", "Invalid or expired verification token.");
+  }
+}

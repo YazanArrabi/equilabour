@@ -64,6 +64,14 @@ model User {
   passwordHash String
   role         UserRole
 
+  phoneNumber     String?
+  emailVerified   Boolean   @default(false)
+  phoneVerified   Boolean   @default(false)
+  emailOtp        String?
+  emailOtpExpiry  DateTime?
+  phoneOtp        String?
+  phoneOtpExpiry  DateTime?
+
   workerProfile  WorkerProfile?
   companyProfile CompanyProfile?
   refreshTokens  RefreshToken[]

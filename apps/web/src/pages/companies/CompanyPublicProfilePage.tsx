@@ -62,11 +62,25 @@ export default function CompanyPublicProfilePage() {
 
   if (!profile) return null;
 
+  const initials = profile.companyName
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{profile.companyName}</h1>
-        <p className="text-muted-foreground">Company Profile</p>
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-lg font-bold select-none shrink-0">
+          {initials}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold leading-tight">{profile.companyName}</h1>
+          <p className="text-muted-foreground">
+            {profile.industry ? profile.industry : "Company Profile"}
+          </p>
+        </div>
       </div>
 
       <Card>

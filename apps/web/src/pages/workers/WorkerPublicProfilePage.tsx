@@ -64,11 +64,27 @@ export default function WorkerPublicProfilePage() {
 
   if (!profile) return null;
 
+  const initials = profile.fullName
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const headlineTitle = profile.pastJobTitles[0] ?? null;
+
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{profile.fullName}</h1>
-        <p className="text-muted-foreground">Worker Profile</p>
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold select-none shrink-0">
+          {initials}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold leading-tight">{profile.fullName}</h1>
+          <p className="text-muted-foreground">
+            {headlineTitle ?? "Worker Profile"}
+          </p>
+        </div>
       </div>
 
       <Card>

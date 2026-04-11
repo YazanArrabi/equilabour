@@ -139,7 +139,7 @@ export default function JobApplicationsPage() {
                     to={`/workers/${app.workerProfileId}`}
                     className="font-semibold hover:underline"
                   >
-                    Applicant #{app.workerProfileId.slice(0, 8)}
+                    {app.workerName ?? `Applicant #${app.workerProfileId.slice(0, 8)}`}
                   </Link>
                   <ApplicationStatusBadge status={app.status} />
                 </div>

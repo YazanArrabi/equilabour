@@ -9,12 +9,12 @@ import {
 } from "@/api/jobs";
 import { ApiError } from "@/api/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocationCombobox } from "@/components/ui/location-combobox";
+import { Search, SlidersHorizontal, Building2, MapPin, Clock } from "lucide-react";
 
 const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   full_time: "Full Time",
@@ -29,6 +29,23 @@ const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
   junior: "Junior",
   mid: "Mid-Level",
   senior: "Senior",
+};
+
+// Color-coded badge styles for employment type
+const EMPLOYMENT_TYPE_COLORS: Record<EmploymentType, string> = {
+  full_time: "bg-blue-50 text-blue-700 border border-blue-200",
+  part_time: "bg-purple-50 text-purple-700 border border-purple-200",
+  contract: "bg-orange-50 text-orange-700 border border-orange-200",
+  internship: "bg-green-50 text-green-700 border border-green-200",
+  freelance: "bg-teal-50 text-teal-700 border border-teal-200",
+};
+
+// Color-coded badge styles for experience level
+const EXPERIENCE_LEVEL_COLORS: Record<ExperienceLevel, string> = {
+  entry: "bg-green-50 text-green-700 border border-green-200",
+  junior: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  mid: "bg-orange-50 text-orange-700 border border-orange-200",
+  senior: "bg-red-50 text-red-700 border border-red-200",
 };
 
 const ALL_EMPLOYMENT_TYPES = Object.keys(EMPLOYMENT_TYPE_LABELS) as EmploymentType[];
@@ -82,9 +99,51 @@ function toggleItem<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
 }
 
+function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
+  const pay = formatPay(job);
+  return (
+    <Card
+      className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+      onClick={onClick}
+    >
+      <CardContent className="py-4 space-y-2.5">
+        <div className="space-y-0.5">
+          <p className="font-semibold text-base leading-snug">{job.title}</p>
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Building2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{job.companyName}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EMPLOYMENT_TYPE_COLORS[job.employmentType]}`}>
+            {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
+          </span>
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[job.experienceLevel]}`}>
+            {EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          {job.location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              {job.location}
+            </span>
+          )}
+          {pay && <span className="text-primary font-medium">{pay}</span>}
+        </div>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {formatPostedDate(job.postedAt)}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function JobListingsPage() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,6 +168,7 @@ export default function JobListingsPage() {
     })
       .then((result) => {
         setJobs(result.items);
+        setTotal(result.total);
         setPage(result.page);
         setTotalPages(result.totalPages);
       })
@@ -159,29 +219,49 @@ export default function JobListingsPage() {
     (filters.payMax !== "" ? 1 : 0);
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Job Listings</h1>
+    <div className="max-w-5xl mx-auto py-8 px-4 space-y-5">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Job Listings</h1>
+          {!isLoading && (
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {total === 0
+                ? "No jobs found"
+                : total === 1
+                ? "1 job available"
+                : `${total.toLocaleString()} jobs available`}
+            </p>
+          )}
+        </div>
         <Button
           variant={showFilters ? "default" : "outline"}
           size="sm"
+          className="gap-1.5 shrink-0"
           onClick={() => setShowFilters((v) => !v)}
         >
+          <SlidersHorizontal className="h-4 w-4" />
           Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </Button>
       </div>
 
-      <Input
-        placeholder="Search jobs by title or description…"
-        value={search}
-        onChange={(e) => handleSearchChange(e.target.value)}
-      />
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          className="pl-9"
+          placeholder="Search jobs by title or description…"
+          value={search}
+          onChange={(e) => handleSearchChange(e.target.value)}
+        />
+      </div>
 
+      {/* Filters panel */}
       {showFilters && (
         <Card>
           <CardContent className="pt-4 pb-4 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Employment Type — checkboxes */}
+              {/* Employment Type */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employment type</p>
                 <div className="space-y-1.5">
@@ -203,7 +283,7 @@ export default function JobListingsPage() {
                 </div>
               </div>
 
-              {/* Experience Level — checkboxes */}
+              {/* Experience Level */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Experience level</p>
                 <div className="space-y-1.5">
@@ -280,8 +360,9 @@ export default function JobListingsPage() {
         </Alert>
       )}
 
+      {/* Results */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {Array.from({ length: 4 }).map((_, i) => <JobCardSkeleton key={i} />)}
         </div>
       ) : jobs.length === 0 ? (
@@ -294,33 +375,18 @@ export default function JobListingsPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {jobs.map((job) => {
-            const pay = formatPay(job);
-            return (
-              <Card
-                key={job.id}
-                className="cursor-pointer hover:border-primary/40 transition-colors"
-                onClick={() => navigate(`/jobs/${job.id}`)}
-              >
-                <CardContent className="py-4 space-y-2">
-                  <p className="font-semibold text-base">{job.title}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="secondary">{EMPLOYMENT_TYPE_LABELS[job.employmentType]}</Badge>
-                    <Badge variant="secondary">{EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}</Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                    {job.location && <span>{job.location}</span>}
-                    {pay && <span className="text-primary font-medium">{pay}</span>}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{formatPostedDate(job.postedAt)}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {jobs.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              onClick={() => navigate(`/jobs/${job.id}`)}
+            />
+          ))}
         </div>
       )}
 
+      {/* Pagination */}
       {!isLoading && totalPages > 1 && (
         <div className="flex justify-between items-center pt-2">
           <Button

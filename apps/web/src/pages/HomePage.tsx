@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Briefcase, Building2, Zap } from "lucide-react";
+import { Briefcase, Building2, Zap, Search, PlusCircle, FileText, Users } from "lucide-react";
 
 const FEATURES = [
   {
@@ -26,7 +26,6 @@ export default function HomePage() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Case A — auth state not yet resolved
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -35,45 +34,113 @@ export default function HomePage() {
     );
   }
 
-  // Case B — authenticated worker
+  // Authenticated worker dashboard
   if (user?.role === "worker") {
     return (
-      <div className="max-w-2xl mx-auto py-16 px-4 space-y-6">
+      <div className="max-w-3xl mx-auto py-12 px-4 space-y-8">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Welcome back, worker.</h1>
-          <p className="text-muted-foreground">Find your next opportunity.</p>
-        </div>
-        <div className="flex gap-3">
-          <Button onClick={() => navigate("/jobs")}>Browse Jobs</Button>
-          <Button variant="outline" onClick={() => navigate("/applications/me")}>
-            My Applications
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Case C — authenticated company
-  if (user?.role === "company") {
-    return (
-      <div className="max-w-2xl mx-auto py-16 px-4 space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Welcome back.</h1>
-          <p className="text-muted-foreground">
-            Manage your job postings and applicants.
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
+          <p className="text-muted-foreground text-base">
+            Ready to find your next opportunity?
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button onClick={() => navigate("/jobs/mine")}>My Jobs</Button>
-          <Button variant="outline" onClick={() => navigate("/jobs/new")}>
-            Post a Job
-          </Button>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card
+            className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+            onClick={() => navigate("/jobs")}
+          >
+            <CardContent className="pt-5 pb-5 space-y-2">
+              <Search className="h-6 w-6 text-primary" />
+              <p className="font-semibold">Browse Jobs</p>
+              <p className="text-sm text-muted-foreground">
+                Explore open positions that match your skills.
+              </p>
+            </CardContent>
+          </Card>
+          <Card
+            className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+            onClick={() => navigate("/applications/me")}
+          >
+            <CardContent className="pt-5 pb-5 space-y-2">
+              <FileText className="h-6 w-6 text-primary" />
+              <p className="font-semibold">My Applications</p>
+              <p className="text-sm text-muted-foreground">
+                Track the status of your submitted applications.
+              </p>
+            </CardContent>
+          </Card>
+          <Card
+            className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+            onClick={() => navigate("/workers/me")}
+          >
+            <CardContent className="pt-5 pb-5 space-y-2">
+              <Users className="h-6 w-6 text-primary" />
+              <p className="font-semibold">My Profile</p>
+              <p className="text-sm text-muted-foreground">
+                Keep your profile updated to stand out to employers.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
-  // Case D — unauthenticated landing page
+  // Authenticated company dashboard
+  if (user?.role === "company") {
+    return (
+      <div className="max-w-3xl mx-auto py-12 px-4 space-y-8">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
+          <p className="text-muted-foreground text-base">
+            Manage your job postings and find the right talent.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card
+            className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+            onClick={() => navigate("/jobs/new")}
+          >
+            <CardContent className="pt-5 pb-5 space-y-2">
+              <PlusCircle className="h-6 w-6 text-primary" />
+              <p className="font-semibold">Post a Job</p>
+              <p className="text-sm text-muted-foreground">
+                Create a new job posting and start receiving applicants.
+              </p>
+            </CardContent>
+          </Card>
+          <Card
+            className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+            onClick={() => navigate("/jobs/mine")}
+          >
+            <CardContent className="pt-5 pb-5 space-y-2">
+              <Briefcase className="h-6 w-6 text-primary" />
+              <p className="font-semibold">My Jobs</p>
+              <p className="text-sm text-muted-foreground">
+                View and manage your active job listings.
+              </p>
+            </CardContent>
+          </Card>
+          <Card
+            className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+            onClick={() => navigate("/workers")}
+          >
+            <CardContent className="pt-5 pb-5 space-y-2">
+              <Users className="h-6 w-6 text-primary" />
+              <p className="font-semibold">Browse Workers</p>
+              <p className="text-sm text-muted-foreground">
+                Discover talented candidates available for hire.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthenticated landing page
   return (
     <div className="max-w-2xl mx-auto py-20 px-4 space-y-14">
       <div className="space-y-4 text-center">

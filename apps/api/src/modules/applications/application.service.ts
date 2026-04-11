@@ -21,8 +21,14 @@ const applicationWithJobSelect = {
   jobPosting: { select: { title: true } },
 } as const;
 
+const applicationWithWorkerSelect = {
+  ...applicationSelect,
+  workerProfile: { select: { fullName: true } },
+} as const;
+
 export type Application = {
   id: string;
+  workerName?: string;
   jobPostingId: string;
   workerProfileId: string;
   message: string | null;
@@ -132,16 +138,21 @@ export async function listJobApplications(
 
   const where = { jobPostingId: jobId };
 
-  const [total, items] = await prisma.$transaction([
+  const [total, rawItems] = await prisma.$transaction([
     prisma.jobApplication.count({ where }),
     prisma.jobApplication.findMany({
       where,
-      select: applicationSelect,
+      select: applicationWithWorkerSelect,
       skip,
       take: limit,
       orderBy: { appliedAt: "desc" },
     }),
   ]);
+
+  const items: Application[] = rawItems.map(({ workerProfile, ...app }) => ({
+    ...app,
+    workerName: workerProfile.fullName,
+  }));
 
   return {
     items,

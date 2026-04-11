@@ -12,12 +12,14 @@ export interface PaginatedResult<T> {
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  readonly meta: Record<string, unknown>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, meta: Record<string, unknown> = {}) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.meta = meta;
   }
 }
 
@@ -65,7 +67,7 @@ export async function apiFetch<T>(
   const json = (await response.json()) as {
     success: boolean;
     data?: T;
-    error?: { code: string; message: string };
+    error?: { code: string; message: string; [key: string]: unknown };
   };
 
   if (!response.ok) {
@@ -79,10 +81,12 @@ export async function apiFetch<T>(
       window.dispatchEvent(new Event(FORCE_LOGOUT_EVENT));
     }
 
+    const { code: errCode, message: errMessage, ...errMeta } = json.error ?? {};
     throw new ApiError(
       response.status,
-      json.error?.code ?? "UNKNOWN_ERROR",
-      json.error?.message ?? "An unexpected error occurred.",
+      errCode ?? "UNKNOWN_ERROR",
+      errMessage ?? "An unexpected error occurred.",
+      errMeta,
     );
   }
 

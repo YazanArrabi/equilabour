@@ -14,12 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocationCombobox } from "@/components/ui/location-combobox";
+import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 
 const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
   entry: "Entry Level",
   junior: "Junior",
   mid: "Mid-Level",
   senior: "Senior",
+};
+
+const EXPERIENCE_LEVEL_COLORS: Record<ExperienceLevel, string> = {
+  entry: "bg-green-50 text-green-700 border border-green-200",
+  junior: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  mid: "bg-orange-50 text-orange-700 border border-orange-200",
+  senior: "bg-red-50 text-red-700 border border-red-200",
 };
 
 const ALL_EXPERIENCE_LEVELS = Object.keys(EXPERIENCE_LEVEL_LABELS) as ExperienceLevel[];
@@ -52,9 +60,84 @@ function toggleItem<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function WorkerCard({ worker, onClick }: { worker: PublicWorkerProfile; onClick: () => void }) {
+  const experienceLevel = (() => {
+    const yrs = worker.yearsOfExperience;
+    if (yrs < 1) return "entry" as ExperienceLevel;
+    if (yrs < 3) return "junior" as ExperienceLevel;
+    if (yrs < 6) return "mid" as ExperienceLevel;
+    return "senior" as ExperienceLevel;
+  })();
+
+  function yearsLabel(years: number) {
+    if (years === 0) return "< 1 year exp.";
+    if (years === 1) return "1 year exp.";
+    return `${years} years exp.`;
+  }
+
+  return (
+    <Card
+      className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+      onClick={onClick}
+    >
+      <CardContent className="py-4 space-y-2.5">
+        {/* Name + avatar */}
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0 select-none">
+            {getInitials(worker.fullName)}
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-base leading-tight truncate">{worker.fullName}</p>
+            {worker.pastJobTitles.length > 0 && (
+              <p className="text-xs text-muted-foreground truncate">
+                {worker.pastJobTitles[0]}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Experience badge + location */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[experienceLevel]}`}>
+            {yearsLabel(worker.yearsOfExperience)}
+          </span>
+          {worker.location && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {worker.location}
+            </span>
+          )}
+        </div>
+
+        {/* Skills */}
+        {worker.skills.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {worker.skills.slice(0, 5).map((skill) => (
+              <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+            ))}
+            {worker.skills.length > 5 && (
+              <Badge variant="outline" className="text-xs">+{worker.skills.length - 5}</Badge>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function WorkersPage() {
   const navigate = useNavigate();
   const [workers, setWorkers] = useState<PublicWorkerProfile[]>([]);
+  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +160,7 @@ export default function WorkersPage() {
     })
       .then((result) => {
         setWorkers(result.items);
+        setTotal(result.total);
         setPage(result.page);
         setTotalPages(result.totalPages);
       })
@@ -122,36 +206,50 @@ export default function WorkersPage() {
     (filters.location !== "" ? 1 : 0) +
     (filters.skills !== "" ? 1 : 0);
 
-  function yearsLabel(years: number) {
-    if (years === 0) return "< 1 year experience";
-    if (years === 1) return "1 year experience";
-    return `${years} years experience`;
-  }
-
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Browse Workers</h1>
+    <div className="max-w-5xl mx-auto py-8 px-4 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Browse Workers</h1>
+          {!isLoading && (
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {total === 0
+                ? "No workers found"
+                : total === 1
+                ? "1 worker available"
+                : `${total.toLocaleString()} workers available`}
+            </p>
+          )}
+        </div>
         <Button
           variant={showFilters ? "default" : "outline"}
           size="sm"
+          className="gap-1.5 shrink-0"
           onClick={() => setShowFilters((v) => !v)}
         >
+          <SlidersHorizontal className="h-4 w-4" />
           Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </Button>
       </div>
 
-      <Input
-        placeholder="Search by name or experience…"
-        value={search}
-        onChange={(e) => handleSearchChange(e.target.value)}
-      />
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          className="pl-9"
+          placeholder="Search by name, job title, or skills…"
+          value={search}
+          onChange={(e) => handleSearchChange(e.target.value)}
+        />
+      </div>
 
+      {/* Filters panel */}
       {showFilters && (
         <Card>
           <CardContent className="pt-4 pb-4 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Experience Level — checkboxes */}
+              {/* Experience Level */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Experience level</p>
                 <div className="space-y-1.5">
@@ -173,7 +271,7 @@ export default function WorkersPage() {
                 </div>
               </div>
 
-              {/* Location — combobox */}
+              {/* Location */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Location</p>
                 <LocationCombobox
@@ -213,8 +311,9 @@ export default function WorkersPage() {
         </Alert>
       )}
 
+      {/* Results */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {Array.from({ length: 4 }).map((_, i) => <WorkerCardSkeleton key={i} />)}
         </div>
       ) : workers.length === 0 ? (
@@ -227,42 +326,18 @@ export default function WorkersPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {workers.map((worker) => (
-            <Card
+            <WorkerCard
               key={worker.id}
-              className="cursor-pointer hover:border-primary/40 transition-colors"
+              worker={worker}
               onClick={() => navigate(`/workers/${worker.id}`)}
-            >
-              <CardContent className="py-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-base">{worker.fullName}</p>
-                  {worker.location && (
-                    <span className="text-sm text-muted-foreground shrink-0">{worker.location}</span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{yearsLabel(worker.yearsOfExperience)}</p>
-                {worker.pastJobTitles.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {worker.pastJobTitles.slice(0, 3).join(" · ")}
-                  </p>
-                )}
-                {worker.skills.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {worker.skills.slice(0, 6).map((skill) => (
-                      <Badge key={skill} variant="secondary">{skill}</Badge>
-                    ))}
-                    {worker.skills.length > 6 && (
-                      <Badge variant="outline">+{worker.skills.length - 6}</Badge>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            />
           ))}
         </div>
       )}
 
+      {/* Pagination */}
       {!isLoading && totalPages > 1 && (
         <div className="flex justify-between items-center pt-2">
           <Button

@@ -13,6 +13,7 @@ export type ExperienceLevel = "entry" | "junior" | "mid" | "senior";
 export interface Job {
   id: string;
   companyProfileId: string;
+  companyName: string;
   title: string;
   description: string;
   requiredSkills: string[];

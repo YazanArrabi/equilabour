@@ -15,9 +15,23 @@ export interface LoginInput {
 export interface RegisterInput {
   email: string;
   password: string;
+  phoneNumber: string;
   role: "worker" | "company";
   fullName?: string;
   companyName?: string;
+}
+
+export interface PendingResult {
+  pendingToken: string;
+}
+
+export interface VerifyOtpInput {
+  pendingToken: string;
+  code: string;
+}
+
+export interface ResendOtpInput {
+  pendingToken: string;
 }
 
 export function getMe() {
@@ -32,7 +46,28 @@ export function login(input: LoginInput) {
 }
 
 export function register(input: RegisterInput) {
-  return apiFetch<AuthUserData>("/auth/register", {
+  return apiFetch<PendingResult>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function verifyEmail(input: VerifyOtpInput) {
+  return apiFetch<PendingResult>("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function verifyPhone(input: VerifyOtpInput) {
+  return apiFetch<AuthUserData>("/auth/verify-phone", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function resendOtp(input: ResendOtpInput) {
+  return apiFetch<{ sent: boolean }>("/auth/resend-otp", {
     method: "POST",
     body: JSON.stringify(input),
   });

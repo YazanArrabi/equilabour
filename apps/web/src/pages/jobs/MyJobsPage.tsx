@@ -30,6 +30,21 @@ const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
   senior: "Senior",
 };
 
+const EMPLOYMENT_TYPE_COLORS: Record<EmploymentType, string> = {
+  full_time: "bg-blue-50 text-blue-700 border border-blue-200",
+  part_time: "bg-purple-50 text-purple-700 border border-purple-200",
+  contract: "bg-orange-50 text-orange-700 border border-orange-200",
+  internship: "bg-green-50 text-green-700 border border-green-200",
+  freelance: "bg-teal-50 text-teal-700 border border-teal-200",
+};
+
+const EXPERIENCE_LEVEL_COLORS: Record<ExperienceLevel, string> = {
+  entry: "bg-green-50 text-green-700 border border-green-200",
+  junior: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  mid: "bg-orange-50 text-orange-700 border border-orange-200",
+  senior: "bg-red-50 text-red-700 border border-red-200",
+};
+
 function StatusBadge({ status }: { status: Job["status"] }) {
   if (status === "active") {
     return (
@@ -155,8 +170,12 @@ export default function MyJobsPage() {
                   <p className="font-semibold">{job.title}</p>
                   <div className="flex flex-wrap gap-1.5">
                     <StatusBadge status={job.status} />
-                    <Badge variant="secondary">{EMPLOYMENT_TYPE_LABELS[job.employmentType]}</Badge>
-                    <Badge variant="secondary">{EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}</Badge>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EMPLOYMENT_TYPE_COLORS[job.employmentType]}`}>
+                      {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
+                    </span>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${EXPERIENCE_LEVEL_COLORS[job.experienceLevel]}`}>
+                      {EXPERIENCE_LEVEL_LABELS[job.experienceLevel]}
+                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground">{formatPostedDate(job.postedAt)}</p>
                 </div>
@@ -168,31 +187,33 @@ export default function MyJobsPage() {
                   >
                     View applications
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate(`/jobs/${job.id}/edit`)}
-                  >
-                    Edit
-                  </Button>
                   {job.status !== "deleted" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={pendingAction === job.id}
-                      onClick={() => handleStatusToggle(job)}
-                    >
-                      {job.status === "active" ? "Close" : "Reactivate"}
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => navigate(`/jobs/${job.id}/edit`)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={pendingAction === job.id}
+                        onClick={() => handleStatusToggle(job)}
+                      >
+                        {job.status === "active" ? "Close" : "Reactivate"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={pendingAction === job.id}
+                        onClick={() => handleDelete(job.id)}
+                      >
+                        Delete
+                      </Button>
+                    </>
                   )}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={pendingAction === job.id}
-                    onClick={() => handleDelete(job.id)}
-                  >
-                    Delete
-                  </Button>
                 </div>
               </CardContent>
             </Card>
