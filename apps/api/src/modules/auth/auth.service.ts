@@ -104,6 +104,7 @@ export async function register(input: RegisterInput): Promise<PendingResult> {
               workerProfile: {
                 create: {
                   fullName: input.fullName,
+                  phoneNumber: input.phoneNumber,
                   skills: [],
                   pastJobTitles: [],
                 },

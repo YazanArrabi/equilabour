@@ -21,16 +21,25 @@ const workerProfileSelect = {
 } as const;
 
 export async function getWorkerProfileByUserId(userId: string) {
-  const profile = await prisma.workerProfile.findUnique({
-    where: { userId },
-    select: workerProfileSelect,
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      phoneNumber: true,
+      workerProfile: { select: workerProfileSelect },
+    },
   });
 
-  if (!profile) {
+  if (!user?.workerProfile) {
     throw new AppError(404, "PROFILE_NOT_FOUND", "Worker profile not found.");
   }
 
-  return profile;
+  return {
+    ...user.workerProfile,
+    email: user.email,
+    // Fall back to the verified account phone if profile phone is not yet set
+    phoneNumber: user.workerProfile.phoneNumber ?? user.phoneNumber,
+  };
 }
 
 export async function getWorkerProfileById(workerProfileId: string) {
