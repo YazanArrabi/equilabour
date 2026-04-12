@@ -20,6 +20,7 @@ export interface WorkerListParams {
   location?: string;
   page?: number;
   limit?: number;
+  sortBy?: "updatedAt" | "skillRating";
 }
 
 export function listWorkers(params?: WorkerListParams) {
@@ -30,6 +31,7 @@ export function listWorkers(params?: WorkerListParams) {
   if (params?.location) query.set("location", params.location);
   if (params?.page !== undefined) query.set("page", String(params.page));
   if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  if (params?.sortBy) query.set("sortBy", params.sortBy);
   const qs = query.toString();
   return apiFetch<PaginatedResult<PublicWorkerProfile>>(`/profiles/workers${qs ? `?${qs}` : ""}`);
 }

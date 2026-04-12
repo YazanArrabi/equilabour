@@ -22,6 +22,11 @@ function getFrom(): string {
 }
 
 export async function sendSmsOtp(to: string, code: string): Promise<void> {
+  if (process.env.NODE_ENV === "development") {
+    console.log(`\n📱  [DEV] SMS OTP for ${to}  →  ${code}\n`);
+    return;
+  }
+
   const client = getClient();
 
   await client.messages.create({

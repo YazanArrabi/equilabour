@@ -29,7 +29,7 @@ export async function listActiveJobs(req: Request, res: Response) {
   }
 
   const query = JobQuerySchema.parse(req.query);
-  const result = await jobService.listActiveJobs(query);
+  const result = await jobService.listActiveJobs(query, req.auth.userId);
 
   return sendSuccess(res, result);
 }

@@ -10,3 +10,4 @@ pnpm-debug.log*.claude/
 .remember/
 cookies.txt
 cookies_company.txt
+TEST_ACCOUNTS.md

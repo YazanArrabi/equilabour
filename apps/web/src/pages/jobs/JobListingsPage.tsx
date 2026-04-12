@@ -7,6 +7,7 @@ import {
   type EmploymentType,
   type ExperienceLevel,
 } from "@/api/jobs";
+import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/api/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocationCombobox } from "@/components/ui/location-combobox";
-import { Search, SlidersHorizontal, Building2, MapPin, Clock, Briefcase } from "lucide-react";
+import { Search, SlidersHorizontal, Building2, MapPin, Clock, Briefcase, Sparkles } from "lucide-react";
 
 const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   full_time: "Full Time",
@@ -143,6 +144,9 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
 
 export default function JobListingsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isWorker = user?.role === "worker";
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -152,9 +156,12 @@ export default function JobListingsPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"postedAt" | "compatibility">(
+    isWorker ? "compatibility" : "postedAt",
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function fetchJobs(p: number, q: string, f: Filters) {
+  function fetchJobs(p: number, q: string, f: Filters, sort = sortBy) {
     setIsLoading(true);
     setError(null);
     listJobs({
@@ -166,6 +173,7 @@ export default function JobListingsPage() {
       experienceLevel: f.experienceLevel.length > 0 ? f.experienceLevel : undefined,
       payMin: f.payMin !== "" ? Number(f.payMin) : undefined,
       payMax: f.payMax !== "" ? Number(f.payMax) : undefined,
+      sortBy: sort,
     })
       .then((result) => {
         setJobs(result.items);
@@ -180,7 +188,8 @@ export default function JobListingsPage() {
   }
 
   useEffect(() => {
-    fetchJobs(1, "", DEFAULT_FILTERS);
+    fetchJobs(1, "", DEFAULT_FILTERS, sortBy);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleSearchChange(value: string) {
@@ -203,6 +212,12 @@ export default function JobListingsPage() {
     setFilters(DEFAULT_FILTERS);
     setPage(1);
     fetchJobs(1, search, DEFAULT_FILTERS);
+  }
+
+  function handleSortChange(next: "postedAt" | "compatibility") {
+    setSortBy(next);
+    setPage(1);
+    fetchJobs(1, search, filters, next);
   }
 
   const hasActiveFilters =
@@ -235,15 +250,43 @@ export default function JobListingsPage() {
             </p>
           )}
         </div>
-        <Button
-          variant={showFilters ? "default" : "outline"}
-          size="sm"
-          className="gap-1.5 shrink-0"
-          onClick={() => setShowFilters((v) => !v)}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Sort toggle — only meaningful for workers who have an AI analysis */}
+          {isWorker && (
+            <div className="flex items-center rounded-lg border border-border bg-card p-0.5 text-sm">
+              <button
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${
+                  sortBy === "compatibility"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => handleSortChange("compatibility")}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Best Match
+              </button>
+              <button
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  sortBy === "postedAt"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => handleSortChange("postedAt")}
+              >
+                Latest
+              </button>
+            </div>
+          )}
+          <Button
+            variant={showFilters ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </Button>
+        </div>
       </div>
 
       {/* Search */}

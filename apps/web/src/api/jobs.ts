@@ -61,6 +61,7 @@ export interface JobListParams {
   experienceLevel?: ExperienceLevel[];
   payMin?: number;
   payMax?: number;
+  sortBy?: "postedAt" | "compatibility";
 }
 
 export function listJobs(params?: JobListParams) {
@@ -73,6 +74,7 @@ export function listJobs(params?: JobListParams) {
   if (params?.experienceLevel?.length) query.set("experienceLevel", params.experienceLevel.join(","));
   if (params?.payMin !== undefined) query.set("payMin", String(params.payMin));
   if (params?.payMax !== undefined) query.set("payMax", String(params.payMax));
+  if (params?.sortBy) query.set("sortBy", params.sortBy);
   const qs = query.toString();
   return apiFetch<PaginatedResult<Job>>(`/jobs${qs ? `?${qs}` : ""}`);
 }

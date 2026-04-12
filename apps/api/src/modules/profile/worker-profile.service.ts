@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/app-error.js";
 import { stripUndefined } from "../../utils/strip-undefined.js";
+import { mergeWithGlobalCities } from "../../lib/cities.js";
 import type { UpdateWorkerProfileInput, WorkerProfileQueryInput } from "./worker-profile.schemas.js";
 import { analyzeWorkerProfile } from "../ai/ai.service.js";
 
@@ -102,8 +103,7 @@ function experienceLevelToYears(level: string): { gte?: number; lte?: number } {
 }
 
 export async function listWorkerProfiles(query: WorkerProfileQueryInput) {
-  const { page, limit, search, skills, experienceLevel, location } = query;
-  const skip = (page - 1) * limit;
+  const { page, limit, search, skills, experienceLevel, location, sortBy } = query;
 
   const where = {
     AND: [
@@ -133,6 +133,45 @@ export async function listWorkerProfiles(query: WorkerProfileQueryInput) {
     ],
   };
 
+  // ── Skill-rating sort: join AI results, sort in memory ────────────────────
+  if (sortBy === "skillRating") {
+    const allWorkers = await prisma.workerProfile.findMany({
+      where,
+      select: {
+        ...publicWorkerSelect,
+        aiAnalysisResults: {
+          select: { skillRating: true },
+          orderBy: { lastAnalyzedAt: "desc" as const },
+          take: 1,
+        },
+      },
+    });
+
+    const sorted = allWorkers
+      .map((w) => ({
+        profile: w,
+        rating: w.aiAnalysisResults[0]?.skillRating ?? -1,
+      }))
+      .sort((a, b) => b.rating - a.rating)
+      .map(({ profile }) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { aiAnalysisResults: _, ...rest } = profile;
+        return rest;
+      });
+
+    const total = sorted.length;
+    const skip = (page - 1) * limit;
+    return {
+      items: sorted.slice(skip, skip + limit),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // ── Default: date sort ────────────────────────────────────────────────────
+  const skip = (page - 1) * limit;
   const [total, items] = await prisma.$transaction([
     prisma.workerProfile.count({ where }),
     prisma.workerProfile.findMany({
@@ -155,18 +194,13 @@ export async function listWorkerProfiles(query: WorkerProfileQueryInput) {
 
 export async function listWorkerLocations(q?: string): Promise<string[]> {
   const profiles = await prisma.workerProfile.findMany({
-    where: {
-      location: {
-        not: null,
-        ...(q ? { contains: q, mode: "insensitive" as const } : {}),
-      },
-    },
+    where: { location: { not: null } },
     select: { location: true },
     distinct: ["location"],
     orderBy: { location: "asc" },
-    take: 20,
   });
-  return profiles.map((p) => p.location).filter((l): l is string => l !== null);
+  const dbLocations = profiles.map((p) => p.location).filter((l): l is string => l !== null);
+  return mergeWithGlobalCities(dbLocations, q, 30);
 }
 
 export async function getWorkerAiAnalysis(workerProfileId: string) {

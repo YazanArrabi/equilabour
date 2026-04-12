@@ -15,6 +15,11 @@ function getFrom(): string {
 }
 
 export async function sendEmailOtp(to: string, code: string): Promise<void> {
+  if (process.env.NODE_ENV === "development") {
+    console.log(`\n📧  [DEV] Email OTP for ${to}  →  ${code}\n`);
+    return;
+  }
+
   const resend = getClient();
 
   const { error } = await resend.emails.send({

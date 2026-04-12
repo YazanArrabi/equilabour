@@ -263,7 +263,13 @@ export default function RegisterPage() {
       setStep(2);
       startResendCountdown();
     } catch (err) {
-      setApiError(err instanceof ApiError ? err.message : "An unexpected error occurred.");
+      if (err instanceof ApiError && err.code === "EMAIL_ALREADY_IN_USE") {
+        registerForm.setError("email", { message: "This email address is already registered." });
+      } else if (err instanceof ApiError && err.code === "PHONE_ALREADY_IN_USE") {
+        registerForm.setError("phoneNumber", { message: "This phone number is already registered." });
+      } else {
+        setApiError(err instanceof ApiError ? err.message : "An unexpected error occurred.");
+      }
     }
   }
 

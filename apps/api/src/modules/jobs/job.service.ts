@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/app-error.js";
 import { stripUndefined } from "../../utils/strip-undefined.js";
+import { mergeWithGlobalCities } from "../../lib/cities.js";
 import type {
   CreateJobInput,
   JobQueryInput,
@@ -92,11 +93,41 @@ export async function createJob(
   return fmtJob(raw);
 }
 
+// ─── Compatibility scoring ────────────────────────────────────────────────────
+
+function scoreJobForWorker(
+  job: { title: string; requiredSkills: string[] },
+  topSkills: string[],
+  suggestedRoles: string[],
+): number {
+  const lower = (s: string) => s.toLowerCase();
+  const workerSkills = topSkills.map(lower);
+  const jobSkills = job.requiredSkills.map(lower);
+  const jobTitle = lower(job.title);
+
+  // Skill overlap: each matching skill scores 3 points
+  const skillOverlap = jobSkills.filter((s) => workerSkills.includes(s)).length;
+
+  // Role match: any suggested role keyword found in job title scores 2 points
+  const roleMatch = suggestedRoles.some((role) =>
+    role
+      .toLowerCase()
+      .split(/\s+/)
+      .some((word) => word.length > 3 && jobTitle.includes(word)),
+  )
+    ? 1
+    : 0;
+
+  return skillOverlap * 3 + roleMatch * 2;
+}
+
+// ─── List jobs ────────────────────────────────────────────────────────────────
+
 export async function listActiveJobs(
   query: JobQueryInput,
+  requestingUserId?: string,
 ): Promise<PaginatedResult<Job>> {
-  const { page, limit, search, location, employmentType, experienceLevel, payMin, payMax } = query;
-  const skip = (page - 1) * limit;
+  const { page, limit, search, location, employmentType, experienceLevel, payMin, payMax, sortBy } = query;
 
   const where = {
     status: "active" as const,
@@ -115,6 +146,50 @@ export async function listActiveJobs(
     ...(payMax !== undefined && { payMin: { lte: payMax } }),
   };
 
+  // ── Compatibility sort (worker only) ──────────────────────────────────────
+  if (sortBy === "compatibility" && requestingUserId) {
+    const workerProfile = await prisma.workerProfile.findUnique({
+      where: { userId: requestingUserId },
+      select: { id: true },
+    });
+
+    if (workerProfile) {
+      const aiResult = await prisma.aIAnalysisResult.findFirst({
+        where: { workerProfileId: workerProfile.id, status: "fresh" },
+        orderBy: { lastAnalyzedAt: "desc" },
+        select: { topSkills: true, matchRecommendations: true },
+      });
+
+      if (aiResult) {
+        const topSkills = aiResult.topSkills;
+        const recs = aiResult.matchRecommendations as { suggestedRoles: string[] };
+        const suggestedRoles = recs.suggestedRoles ?? [];
+
+        // Fetch all matching jobs (no pagination — scored in memory)
+        const rawAll = await prisma.jobPosting.findMany({
+          where,
+          select: jobSelect,
+          orderBy: { postedAt: "desc" },
+        });
+
+        const scored = rawAll
+          .map((raw) => ({
+            job: fmtJob(raw),
+            score: scoreJobForWorker(raw, topSkills, suggestedRoles),
+          }))
+          .sort((a, b) => b.score - a.score || b.job.postedAt.getTime() - a.job.postedAt.getTime());
+
+        const total = scored.length;
+        const skip = (page - 1) * limit;
+        const items = scored.slice(skip, skip + limit).map((s) => s.job);
+
+        return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+      }
+    }
+  }
+
+  // ── Default: date sort ────────────────────────────────────────────────────
+  const skip = (page - 1) * limit;
   const [total, rawItems] = await prisma.$transaction([
     prisma.jobPosting.count({ where }),
     prisma.jobPosting.findMany({
@@ -284,17 +359,14 @@ export async function listJobLocations(q?: string): Promise<string[]> {
   const jobs = await prisma.jobPosting.findMany({
     where: {
       status: "active",
-      location: {
-        not: null,
-        ...(q ? { contains: q, mode: "insensitive" as const } : {}),
-      },
+      location: { not: null },
     },
     select: { location: true },
     distinct: ["location"],
     orderBy: { location: "asc" },
-    take: 20,
   });
-  return jobs.map((j) => j.location).filter((l): l is string => l !== null);
+  const dbLocations = jobs.map((j) => j.location).filter((l): l is string => l !== null);
+  return mergeWithGlobalCities(dbLocations, q, 30);
 }
 
 export async function softDeleteJob(

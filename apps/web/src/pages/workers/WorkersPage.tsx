@@ -6,6 +6,7 @@ import {
   type PublicWorkerProfile,
   type ExperienceLevel,
 } from "@/api/workers";
+import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/api/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LocationCombobox } from "@/components/ui/location-combobox";
-import { Search, SlidersHorizontal, MapPin, Users } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, Users, Sparkles } from "lucide-react";
 
 const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
   entry: "Entry Level",
@@ -136,6 +137,9 @@ function WorkerCard({ worker, onClick }: { worker: PublicWorkerProfile; onClick:
 
 export default function WorkersPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isCompany = user?.role === "company";
+
   const [workers, setWorkers] = useState<PublicWorkerProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -145,9 +149,12 @@ export default function WorkersPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"updatedAt" | "skillRating">(
+    isCompany ? "skillRating" : "updatedAt",
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function fetchWorkers(p: number, q: string, f: Filters) {
+  function fetchWorkers(p: number, q: string, f: Filters, sort = sortBy) {
     setIsLoading(true);
     setError(null);
     listWorkers({
@@ -157,6 +164,7 @@ export default function WorkersPage() {
       location: f.location || undefined,
       experienceLevel: f.experienceLevel.length > 0 ? f.experienceLevel : undefined,
       skills: f.skills || undefined,
+      sortBy: sort,
     })
       .then((result) => {
         setWorkers(result.items);
@@ -171,7 +179,8 @@ export default function WorkersPage() {
   }
 
   useEffect(() => {
-    fetchWorkers(1, "", DEFAULT_FILTERS);
+    fetchWorkers(1, "", DEFAULT_FILTERS, sortBy);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleSearchChange(value: string) {
@@ -194,6 +203,12 @@ export default function WorkersPage() {
     setFilters(DEFAULT_FILTERS);
     setPage(1);
     fetchWorkers(1, search, DEFAULT_FILTERS);
+  }
+
+  function handleSortChange(next: "updatedAt" | "skillRating") {
+    setSortBy(next);
+    setPage(1);
+    fetchWorkers(1, search, filters, next);
   }
 
   const hasActiveFilters =
@@ -222,15 +237,41 @@ export default function WorkersPage() {
             </p>
           )}
         </div>
-        <Button
-          variant={showFilters ? "default" : "outline"}
-          size="sm"
-          className="gap-1.5 shrink-0"
-          onClick={() => setShowFilters((v) => !v)}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Sort toggle — best match ranks workers by AI skill rating */}
+          <div className="flex items-center rounded-lg border border-border bg-card p-0.5 text-sm">
+            <button
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${
+                sortBy === "skillRating"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => handleSortChange("skillRating")}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Best Match
+            </button>
+            <button
+              className={`rounded-md px-2.5 py-1 transition-colors ${
+                sortBy === "updatedAt"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => handleSortChange("updatedAt")}
+            >
+              Latest
+            </button>
+          </div>
+          <Button
+            variant={showFilters ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </Button>
+        </div>
       </div>
 
       {/* Search */}

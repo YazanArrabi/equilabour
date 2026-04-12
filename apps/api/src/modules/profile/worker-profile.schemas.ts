@@ -18,6 +18,7 @@ export const WorkerProfileQuerySchema = z
     location: z.string().optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(50).default(20),
+    sortBy: z.enum(["updatedAt", "skillRating"]).default("updatedAt").optional(),
   })
   .strip();
 

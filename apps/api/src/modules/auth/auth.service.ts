@@ -80,7 +80,17 @@ export async function register(input: RegisterInput): Promise<PendingResult> {
   });
 
   if (existingUser) {
-    throw new AppError(409, "EMAIL_ALREADY_IN_USE", "Email is already in use.");
+    throw new AppError(409, "EMAIL_ALREADY_IN_USE", "This email address is already registered.");
+  }
+
+  // phoneNumber has no DB-level unique constraint — enforce it here explicitly.
+  const existingPhone = await prisma.user.findFirst({
+    where: { phoneNumber: input.phoneNumber },
+    select: { id: true },
+  });
+
+  if (existingPhone) {
+    throw new AppError(409, "PHONE_ALREADY_IN_USE", "This phone number is already registered.");
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -88,7 +98,15 @@ export async function register(input: RegisterInput): Promise<PendingResult> {
 
   // Send the email BEFORE writing to DB so a failed send doesn't leave an
   // orphaned unverified user record.
-  await sendEmailOtp(input.email, emailCode);
+  try {
+    await sendEmailOtp(input.email, emailCode);
+  } catch {
+    throw new AppError(
+      503,
+      "EMAIL_SEND_FAILED",
+      "We couldn't send the verification email. Please check the address and try again.",
+    );
+  }
 
   const user = await prisma.$transaction(async (tx) => {
     return tx.user.create({
@@ -156,7 +174,11 @@ export async function verifyEmail(input: VerifyOtpInput): Promise<PendingResult>
   // skip re-verification and just resend the phone OTP so the user can advance.
   if (user.emailVerified) {
     const phoneCode = generateOtp();
-    await sendSmsOtp(user.phoneNumber, phoneCode);
+    try {
+      await sendSmsOtp(user.phoneNumber, phoneCode);
+    } catch {
+      throw new AppError(503, "SMS_SEND_FAILED", "We couldn't send the verification SMS. Please try again.");
+    }
     await prisma.user.update({
       where: { id: userId },
       data: { phoneOtp: hashOtp(phoneCode), phoneOtpExpiry: otpExpiresAt() },
@@ -164,21 +186,27 @@ export async function verifyEmail(input: VerifyOtpInput): Promise<PendingResult>
     return { pendingToken: createPendingToken(userId) };
   }
 
-  if (!user.emailOtp || !user.emailOtpExpiry) {
-    throw new AppError(400, "NO_OTP", "No verification code found. Request a new one.");
-  }
+  if (process.env.NODE_ENV !== "development") {
+    if (!user.emailOtp || !user.emailOtpExpiry) {
+      throw new AppError(400, "NO_OTP", "No verification code found. Request a new one.");
+    }
 
-  if (user.emailOtpExpiry.getTime() < Date.now()) {
-    throw new AppError(400, "OTP_EXPIRED", "Verification code has expired. Request a new one.");
-  }
+    if (user.emailOtpExpiry.getTime() < Date.now()) {
+      throw new AppError(400, "OTP_EXPIRED", "Verification code has expired. Request a new one.");
+    }
 
-  if (!verifyOtp(input.code, user.emailOtp)) {
-    throw new AppError(400, "INVALID_OTP", "Invalid verification code.");
+    if (!verifyOtp(input.code, user.emailOtp)) {
+      throw new AppError(400, "INVALID_OTP", "Invalid verification code.");
+    }
   }
 
   // Send SMS BEFORE updating DB — if it fails the user can retry email verification cleanly.
   const phoneCode = generateOtp();
-  await sendSmsOtp(user.phoneNumber, phoneCode);
+  try {
+    await sendSmsOtp(user.phoneNumber, phoneCode);
+  } catch {
+    throw new AppError(503, "SMS_SEND_FAILED", "We couldn't send the verification SMS. Please try again.");
+  }
 
   await prisma.user.update({
     where: { id: userId },
@@ -228,16 +256,18 @@ export async function verifyPhone(input: VerifyOtpInput): Promise<AuthResult> {
     throw new AppError(400, "ALREADY_VERIFIED", "Phone is already verified.");
   }
 
-  if (!user.phoneOtp || !user.phoneOtpExpiry) {
-    throw new AppError(400, "NO_OTP", "No verification code found. Request a new one.");
-  }
+  if (process.env.NODE_ENV !== "development") {
+    if (!user.phoneOtp || !user.phoneOtpExpiry) {
+      throw new AppError(400, "NO_OTP", "No verification code found. Request a new one.");
+    }
 
-  if (user.phoneOtpExpiry.getTime() < Date.now()) {
-    throw new AppError(400, "OTP_EXPIRED", "Verification code has expired. Request a new one.");
-  }
+    if (user.phoneOtpExpiry.getTime() < Date.now()) {
+      throw new AppError(400, "OTP_EXPIRED", "Verification code has expired. Request a new one.");
+    }
 
-  if (!verifyOtp(input.code, user.phoneOtp)) {
-    throw new AppError(400, "INVALID_OTP", "Invalid verification code.");
+    if (!verifyOtp(input.code, user.phoneOtp)) {
+      throw new AppError(400, "INVALID_OTP", "Invalid verification code.");
+    }
   }
 
   const tokens = issueTokenPair(user.id, user.role);
@@ -299,7 +329,11 @@ export async function resendOtp(input: ResendOtpInput): Promise<void> {
       where: { id: userId },
       data: { emailOtp: hash, emailOtpExpiry: expiry },
     });
-    await sendEmailOtp(user.email, code);
+    try {
+      await sendEmailOtp(user.email, code);
+    } catch {
+      throw new AppError(503, "EMAIL_SEND_FAILED", "We couldn't send the verification email. Please try again.");
+    }
   } else {
     if (!user.phoneNumber) {
       throw new AppError(500, "INTERNAL_ERROR", "Phone number missing on account.");
@@ -308,7 +342,11 @@ export async function resendOtp(input: ResendOtpInput): Promise<void> {
       where: { id: userId },
       data: { phoneOtp: hash, phoneOtpExpiry: expiry },
     });
-    await sendSmsOtp(user.phoneNumber, code);
+    try {
+      await sendSmsOtp(user.phoneNumber, code);
+    } catch {
+      throw new AppError(503, "SMS_SEND_FAILED", "We couldn't send the verification SMS. Please try again.");
+    }
   }
 }
 

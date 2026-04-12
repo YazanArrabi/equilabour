@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   getMyWorkerProfile,
   updateMyWorkerProfile,
+  getWorkerAiAnalysis,
   type WorkerProfile,
+  type AIAnalysis,
 } from "@/api/workers";
 import { ApiError } from "@/api/client";
 import {
@@ -28,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapPin, Briefcase, Mail, Phone } from "lucide-react";
+import { MapPin, Briefcase, Mail, Phone, Sparkles, TrendingUp, AlertCircle } from "lucide-react";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -116,6 +118,198 @@ function TagInput({
   );
 }
 
+// ─── AI analysis card ─────────────────────────────────────────────────────────
+
+function RatingBar({ value, max = 10 }: { value: number; max?: number }) {
+  const pct = Math.round((value / max) * 100);
+  const color =
+    value >= 8 ? "bg-green-500" : value >= 5 ? "bg-primary" : "bg-yellow-500";
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-semibold text-foreground/70 w-8 text-right">
+        {value}<span className="font-normal text-muted-foreground">/10</span>
+      </span>
+    </div>
+  );
+}
+
+function CompletenessBar({ value }: { value: number }) {
+  const color =
+    value >= 80 ? "bg-green-500" : value >= 50 ? "bg-primary" : "bg-yellow-500";
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
+      </div>
+      <span className="text-xs font-semibold text-foreground/70 w-8 text-right">
+        {value}<span className="font-normal text-muted-foreground">%</span>
+      </span>
+    </div>
+  );
+}
+
+function AIAnalysisCard({ analysis, isLoading }: { analysis: AIAnalysis | null; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-4 w-4 text-primary" />
+            AI Profile Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-4/5" />
+          <Skeleton className="h-3 w-2/3" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!analysis || analysis.status === "failed") {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-6 flex items-center gap-3 text-muted-foreground">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <p className="text-sm">
+            AI analysis will appear here after you save your profile. The more detail you add, the better the insights.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { matchRecommendations: match, candidateRecommendations: candidate } = analysis;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-4 w-4 text-primary" />
+            AI Profile Analysis
+          </CardTitle>
+          <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+            Auto-updated on save
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Scores */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Skill rating</p>
+            <RatingBar value={analysis.skillRating} />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Profile completeness</p>
+            <CompletenessBar value={candidate.profileCompletenessScore} />
+          </div>
+        </div>
+
+        {/* Summary */}
+        {analysis.skillSummary && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Summary</p>
+            <p className="text-sm leading-relaxed text-foreground/80">{analysis.skillSummary}</p>
+          </div>
+        )}
+
+        {/* Top skills */}
+        {analysis.topSkills.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Top skills</p>
+            <div className="flex flex-wrap gap-1.5">
+              {analysis.topSkills.map((s) => (
+                <Badge key={s} variant="secondary" className="bg-primary/8 text-primary border-0 text-xs">
+                  {s}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Suggested roles & industries */}
+        {(match.suggestedRoles.length > 0 || match.suggestedIndustries.length > 0) && (
+          <div className="grid grid-cols-2 gap-4">
+            {match.suggestedRoles.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggested roles</p>
+                <ul className="space-y-0.5">
+                  {match.suggestedRoles.map((r) => (
+                    <li key={r} className="text-xs text-foreground/80 flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-primary/50 shrink-0" />
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {match.suggestedIndustries.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Suggested industries</p>
+                <ul className="space-y-0.5">
+                  {match.suggestedIndustries.map((i) => (
+                    <li key={i} className="text-xs text-foreground/80 flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-primary/50 shrink-0" />
+                      {i}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Recruiter notes */}
+        {match.notes && (
+          <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-3 leading-relaxed">
+            {match.notes}
+          </p>
+        )}
+
+        {/* Strengths & areas for improvement */}
+        {(candidate.strengths.length > 0 || candidate.areasForImprovement.length > 0) && (
+          <div className="grid grid-cols-2 gap-4 pt-1 border-t border-border/60">
+            {candidate.strengths.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3 text-green-500" /> Strengths
+                </p>
+                <ul className="space-y-0.5">
+                  {candidate.strengths.map((s) => (
+                    <li key={s} className="text-xs text-foreground/80 flex items-start gap-1">
+                      <span className="h-1 w-1 rounded-full bg-green-400 shrink-0 mt-1.5" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {candidate.areasForImprovement.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Areas to improve</p>
+                <ul className="space-y-0.5">
+                  {candidate.areasForImprovement.map((a) => (
+                    <li key={a} className="text-xs text-foreground/80 flex items-start gap-1">
+                      <span className="h-1 w-1 rounded-full bg-yellow-400 shrink-0 mt-1.5" />
+                      {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── form schema ──────────────────────────────────────────────────────────────
 
 const schema = z.object({
@@ -150,6 +344,8 @@ export default function WorkerProfilePage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(true);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -164,6 +360,14 @@ export default function WorkerProfilePage() {
     },
   });
 
+  const fetchAnalysis = useCallback(() => {
+    setIsAnalysisLoading(true);
+    getWorkerAiAnalysis("me")
+      .then((res) => setAnalysis(res.analysis))
+      .catch(() => setAnalysis(null))
+      .finally(() => setIsAnalysisLoading(false));
+  }, []);
+
   useEffect(() => {
     getMyWorkerProfile()
       .then(setProfile)
@@ -173,7 +377,9 @@ export default function WorkerProfilePage() {
         );
       })
       .finally(() => setIsLoading(false));
-  }, []);
+
+    fetchAnalysis();
+  }, [fetchAnalysis]);
 
   function enterEditMode() {
     if (!profile) return;
@@ -201,6 +407,8 @@ export default function WorkerProfilePage() {
       });
       setProfile(updated);
       setIsEditing(false);
+      // Refresh AI analysis — the backend runs it synchronously on save
+      fetchAnalysis();
     } catch (err) {
       setApiError(
         err instanceof ApiError ? err.message : "An unexpected error occurred.",
@@ -501,6 +709,8 @@ export default function WorkerProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <AIAnalysisCard analysis={analysis} isLoading={isAnalysisLoading} />
     </div>
   );
 }
